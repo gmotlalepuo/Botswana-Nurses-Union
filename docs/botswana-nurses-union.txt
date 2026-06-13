@@ -1,0 +1,155 @@
+Botswana Nurses Union (BONU) Application Requirements Document
+1. Introduction
+The Botswana Nurses Union (BONU) intends to develop a digital platform that will allow members to register, manage their memberships, apply for various union services, and make payments online.
+The solution will consist of two portals:
+1. Customer Portal (Member Portal) ­ Used by BONU members to register, manage their profiles, apply for services, track applications, and make payments.
+2. Back Office Portal (CSR Portal) ­ Used by Customer Service Representatives (CSRs), administrators, and management staff to review, approve, process, and manage member applications and services.
+2. Customer Portal Requirements
+2.1 Member Registration and Authentication
+The system shall allow users to:
+ Register as BONU members.  Create and manage accounts.  Login using username/email and password.  Reset forgotten passwords.  Update personal information.  Upload supporting documents.  View membership status.  View payment history.
+Membership Information Collected
+Personal Information
+ Full Name  National ID / Passport Number  Date of Birth  Gender
+
+ Marital Status  Occupation  Employer  Employee Number
+Contact Information
+ Mobile Number  Alternative Contact Number  Email Address  Physical Address  Postal Address  District  Region
+Employment Information
+ Employer Name  Work Station  Department  Employment Date  Salary Information
+Supporting Documents
+ National ID Copy  Passport Photo  Employment Confirmation Letter  Recent Payslip  Additional Supporting Documents
+3. Membership Subscription Service
+Members shall be able to:
+ Apply for BONU membership.  View membership details.  View membership benefits.  Pay monthly membership subscriptions.  Track payment history.  Download membership confirmation letters.
+Membership Payments
+
+The system shall:
+ Calculate monthly membership subscriptions.  Record payment transactions.  Generate receipts.  Track outstanding balances.  Automatically allocate deductions towards subscribed services.
+4. Funeral Insurance Service
+The system shall allow members to apply for funeral insurance cover.
+Features
+ Apply for funeral cover.  Select desired cover level.  Add dependents/beneficiaries.  Upload supporting documents.  View cover status.  View monthly premium amounts.
+Premium Deductions
+The system shall:
+ Calculate funeral cover premiums.  Deduct premiums from the member's monthly membership payment.  Display premium breakdowns.  Track policy status.
+5. Legal Aid Insurance Service
+The system shall provide legal aid insurance services to members.
+Covered Services
+Family Legal Matters
+ Child Custody  Divorce
+
+ Child Access  Adoption  Division of Joint Estates
+Civil Legal Matters
+ Breach of Contracts  Debt Collection  Lease Agreement Drafting  Syndicate Contract Drafting  Memorandum of Sale Drafting  Motor Vehicle Sale Agreements  Cost of Repair Disputes  Human Rights Matters  Property Transfers  Motor Vehicle Accident Claims
+Labour Matters
+ Unfair Dismissal  Constructive Dismissal  Unfair Retrenchment  Underpayment of Wages  Representation in Disciplinary Hearings  Unfair Demotions
+Complimentary Matters
+ Will Drafting and Registration  General Legal Advice  Regulatory and Statutory Consultations
+Features
+Members shall be able to:
+ Apply for legal aid services.  Submit supporting documents.  Track case progress.  Communicate with assigned CSR.  View legal aid subscription status.
+Payment Processing
+The system shall:
+
+ Calculate legal aid premiums.  Deduct premiums from monthly membership contributions.  Generate legal aid invoices and receipts.
+6. Loan Application Assistance Service
+BONU shall assist members in applying for loans from partnered financial institutions.
+Features
+Members shall be able to:
+ Submit loan requests.  Select preferred bank.  Upload supporting documents.  Track application progress.  View loan approval status.
+CSR Processing
+CSRs shall:
+ Review applications.  Verify documents.  Communicate with financial institutions.  Update application status.  Approve or reject applications.
+Loan Repayments
+If approved:
+ Loan repayment amounts shall be deducted from the member's monthly membership payment.
+ The system shall track repayment balances.  Members shall be able to view repayment schedules.
+7. BONU Micro-Lending Service
+BONU shall provide internal micro-loans to members.
+
+Features
+Members shall:
+ Apply for micro-loans.  View eligibility criteria.  View loan limits.  Upload supporting documents.  Track loan status.
+Processing
+CSRs shall:
+ Review applications.  Approve or reject applications.  Generate loan agreements.
+Repayments
+The system shall:
+ Calculate repayment schedules.  Deduct loan repayments from monthly membership deductions.  Display loan balances and payment history.
+8. Merchandise Store Service
+BONU shall provide an online merchandise store.
+Merchandise Examples
+ Uniforms  Branded Clothing  Bags  Accessories  Promotional Items
+Features
+Members shall be able to:
+ Browse merchandise.
+
+ Add items to cart.  Place orders.  View order history.  Track deliveries.
+Payment Options
+Cash Purchase
+ Pay immediately during checkout.
+Credit Purchase
+ Purchase merchandise on credit.  Monthly repayments deducted from membership contributions.
+9. Electronic Contract Services
+BONU shall offer electronic contract purchases for gadgets and devices.
+Products
+ Mobile Phones  Laptops  Tablets  Routers  Other Approved Electronic Devices
+Features
+Members shall:
+ Browse available products.  Submit purchase requests.  View payment schedules.  Track approval status.
+Payment Processing
+The system shall:
+ Calculate installment plans.  Generate electronic agreements.
+
+ Deduct monthly installments from membership payments.  Track outstanding balances.
+10. Customer Dashboard
+The customer dashboard shall display:
+ Membership Status  Active Services  Outstanding Balances  Monthly Deduction Breakdown  Payment History  Application Statuses  Notifications  Announcements  Available Benefits
+11. Back Office Portal (CSR Portal)
+11.1 Member Management
+CSRs shall be able to:
+ View member profiles.  Update member information.  Verify uploaded documents.  Activate or suspend memberships.  Manage member records.
+11.2 Application Management
+CSRs shall be able to:
+ Review submitted applications.  Request additional information.  Approve applications.  Reject applications.
+
+ Escalate applications.  Track processing progress.
+11.3 Payment Management
+CSRs shall be able to:  View payment records.  Process manual payments.  Reverse transactions when authorized.  Generate receipts.  Generate invoices.
+11.4 Loan Management
+CSRs shall be able to:  Review loan applications.  Approve or reject loans.  Generate loan schedules.  Monitor repayments.  Manage loan arrears.
+11.5 Merchandise Management
+CSRs shall be able to:  Add merchandise.  Update merchandise.  Manage inventory.  Process orders.  Track deliveries.
+11.6 Electronic Contract Management
+CSRs shall be able to:
+
+ Add products.  Manage product catalogues.  Review purchase requests.  Generate installment agreements.  Monitor repayments.
+11.7 Legal Aid Management
+CSRs shall be able to:
+ Register legal aid requests.  Assign legal advisors.  Track case progress.  Manage legal aid subscriptions.
+12. BONU Membership Activation Campaign Requirements
+The system should support member activation and registration campaigns conducted at healthcare facilities.
+Activities
+ Register New Members  Update Funeral Policies  Update Member Information (KYC)  Merchandise Sales  Device Sales (Phones, Laptops, Routers)  Legal Aid Information Services  Loan Application Assistance
+Required Documents
+Members should provide:
+ National ID Copy  Recent Payslip  Employment Confirmation Letter
+
+13. Reporting Requirements
+The system shall generate reports for:
+ Total Members  Active Members  New Registrations  Membership Revenue  Funeral Cover Revenue  Legal Aid Revenue  Loan Applications  Approved Loans  Micro-Loan Performance  Merchandise Sales  Electronic Contract Sales  Outstanding Balances  Payment Collections  Regional Statistics  Branch Performance
+14. Notifications
+The system shall send:
+ SMS Notifications  Email Notifications  In-App Notifications
+For:
+ Membership Approval  Payment Confirmations  Application Status Changes  Loan Approvals  Loan Repayments  Merchandise Orders  Legal Aid Updates  System Announcements
+
+15. Integration Requirements
+The system should support integration with:
+ Payment Gateways  Banks and Financial Institutions  SMS Providers  Email Services  Accounting Systems  Identity Verification Services  Insurance Providers  Legal Aid Partners
+16. Future Enhancements
+ Mobile Application (Android & iOS)  Digital Membership Cards  QR Code Verification  AI-Powered Member Support Chatbot  Online Appointment Booking  Document E-Signatures  Payroll Deduction Integration  Self-Service Loan Eligibility Checker
+This document can serve as the foundation for a full BRD, system architecture design, and project estimation for the BONU digital platform.
+
+

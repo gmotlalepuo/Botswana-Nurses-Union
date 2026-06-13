@@ -1,0 +1,320 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+:root {
+  --background: hsl(190 35% 97%);
+  --foreground: hsl(204 42% 12%);
+  --muted: hsl(188 24% 92%);
+  --muted-foreground: hsl(201 16% 39%);
+  --border: hsl(188 22% 82%);
+  --primary: hsl(191 88% 34%);
+  --primary-foreground: hsl(0 0% 100%);
+  --accent: hsl(31 94% 56%);
+  --accent-foreground: hsl(24 28% 13%);
+  --success: hsl(155 62% 32%);
+  --surface: hsl(0 0% 100%);
+  --surface-strong: hsl(193 61% 17%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(204 42% 12%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(204 42% 12%);
+  --secondary: hsl(188 24% 92%);
+  --secondary-foreground: hsl(204 42% 16%);
+  --destructive: hsl(2 70% 48%);
+  --input: hsl(188 22% 82%);
+  --ring: hsl(191 88% 34%);
+  --radius: 0.5rem;
+  --shadow-soft: 0 16px 42px rgba(14, 55, 68, 0.08);
+  --shadow-lifted: 0 20px 50px rgba(11, 74, 91, 0.13);
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-success: var(--success);
+  --color-surface: var(--surface);
+  --color-surface-strong: var(--surface-strong);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-destructive: var(--destructive);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-primary/40;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply min-h-screen bg-background text-foreground;
+    background-image:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(235, 247, 248, 0.84)),
+      radial-gradient(circle at 8% 5%, rgba(7, 148, 172, 0.11), transparent 28%),
+      radial-gradient(circle at 94% 12%, rgba(246, 135, 36, 0.08), transparent 22%);
+    background-attachment: fixed;
+  }
+
+  a,
+  button,
+  input,
+  select,
+  textarea {
+    transition:
+      color 180ms ease,
+      background-color 180ms ease,
+      border-color 180ms ease,
+      box-shadow 180ms ease,
+      opacity 180ms ease,
+      transform 180ms ease;
+  }
+
+  button:not(:disabled),
+  a,
+  label[for],
+  select:not(:disabled) {
+    cursor: pointer;
+  }
+
+  input,
+  select,
+  textarea {
+    @apply bg-white/90;
+  }
+
+  input:focus,
+  select:focus,
+  textarea:focus {
+    border-color: color-mix(in srgb, var(--primary) 72%, white);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 13%, transparent);
+  }
+
+  button:active:not(:disabled),
+  a:active {
+    transform: translateY(1px);
+  }
+}
+
+@keyframes bonu-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bonu-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes form-submit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+button.form-submit-pending {
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+button.form-submit-pending::before {
+  content: "";
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.5rem;
+  vertical-align: -0.125em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 9999px;
+  animation: form-submit-spin 0.7s linear infinite;
+}
+
+.portal-shell {
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.9), rgba(230, 246, 247, 0.94)),
+    repeating-linear-gradient(90deg, rgba(12, 139, 176, 0.05) 0 1px, transparent 1px 96px);
+}
+
+.bonu-shell {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+}
+
+.bonu-shell::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(225, 245, 247, 0.7)),
+    radial-gradient(circle at 82% 4%, rgba(246, 135, 36, 0.08), transparent 24%);
+}
+
+.bonu-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-color: rgba(151, 190, 198, 0.52);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 10px 32px rgba(16, 70, 84, 0.07);
+  backdrop-filter: blur(18px) saturate(145%);
+}
+
+.bonu-brand-logo {
+  border: 1px solid rgba(13, 139, 164, 0.18);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 24px rgba(9, 105, 128, 0.12);
+}
+
+.bonu-content {
+  animation: bonu-enter 420ms ease-out both;
+}
+
+.bonu-card,
+.rounded-lg.border.bg-white,
+.rounded-lg.border.bg-surface {
+  border-color: rgba(146, 187, 195, 0.54);
+  background: rgba(255, 255, 255, 0.87);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(14px) saturate(125%);
+}
+
+.bonu-card:hover,
+article.rounded-lg.border.bg-white:hover,
+article.rounded-lg.border.bg-surface:hover {
+  border-color: rgba(12, 139, 176, 0.3);
+  box-shadow: var(--shadow-lifted);
+  transform: translateY(-2px);
+}
+
+.bg-surface-strong {
+  background:
+    linear-gradient(135deg, rgba(12, 77, 91, 0.98), rgba(7, 121, 143, 0.94)),
+    var(--surface-strong);
+}
+
+.bg-primary {
+  background-image: linear-gradient(120deg, hsl(191 88% 31%), hsl(184 78% 37%));
+  background-size: 180% 180%;
+}
+
+button.bg-primary:hover,
+a.bg-primary:hover {
+  background-position: 100% 50%;
+  box-shadow: 0 10px 24px rgba(5, 132, 158, 0.22);
+  transform: translateY(-1px);
+}
+
+.bonu-nav {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(11, 139, 164, 0.35) transparent;
+}
+
+.bonu-nav-link {
+  position: relative;
+  overflow: hidden;
+}
+
+.bonu-nav-link::after {
+  position: absolute;
+  right: 14px;
+  bottom: 4px;
+  left: 14px;
+  height: 2px;
+  content: "";
+  background: currentColor;
+  border-radius: 999px;
+  opacity: 0;
+  transform: scaleX(0.35);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.bonu-nav-link:hover::after,
+.bonu-nav-link[data-active="true"]::after {
+  opacity: 0.6;
+  transform: scaleX(1);
+}
+
+.bonu-auth-shell {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    linear-gradient(145deg, rgba(235, 249, 250, 0.96), rgba(255, 255, 255, 0.92)),
+    radial-gradient(circle at 20% 20%, rgba(12, 139, 176, 0.18), transparent 32%),
+    radial-gradient(circle at 85% 80%, rgba(246, 135, 36, 0.12), transparent 28%);
+}
+
+.bonu-auth-card {
+  animation: bonu-enter 480ms ease-out both;
+  border-color: rgba(132, 183, 193, 0.58);
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 28px 70px rgba(10, 75, 90, 0.16);
+  backdrop-filter: blur(22px) saturate(135%);
+}
+
+.bonu-auth-card::before {
+  display: block;
+  width: 56px;
+  height: 4px;
+  margin-bottom: 1.25rem;
+  content: "";
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  border-radius: 999px;
+}
+
+table tbody tr {
+  transition: background-color 160ms ease;
+}
+
+table tbody tr:hover {
+  background: rgba(226, 244, 246, 0.58);
+}
+
+table thead {
+  background: linear-gradient(180deg, rgba(224, 239, 242, 0.96), rgba(214, 233, 237, 0.9));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
