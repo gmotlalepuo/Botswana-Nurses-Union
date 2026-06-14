@@ -2,6 +2,7 @@ import { CsrHeader } from "@/components/csr-header"
 import { CsrWorkbench, type CsrWorkbenchSection } from "@/components/csr-workbench"
 import { requireCsrPage } from "@/lib/admin-auth"
 import { getCsrPortalData } from "@/lib/csr-data"
+import { CsrPaymentImport } from "@/components/csr-payment-import"
 
 type Props = {
   title: string
@@ -32,6 +33,8 @@ export async function CsrSectionPage({ title, description, section, applicationT
           <h1 className="text-3xl font-bold tracking-normal">{title}</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">{description}</p>
         </div>
+
+        {section === "payments" && <CsrPaymentImport />}
 
         <CsrWorkbench
           members={data.members}

@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { FormField, FormTextArea, HiddenApplicationFields } from "@/components/member-application-form"
+import { AiMimicButton } from "@/components/ai-mimic-button"
 
 const coverLevels = [
   {
@@ -115,8 +116,17 @@ export function FuneralCoverForm() {
         ) : null}
       </section>
 
-      <form action="/api/member/applications/create" method="post" className="grid gap-4 md:grid-cols-2">
+      <form id="funeral-cover-application" action="/api/member/applications/create" method="post" className="grid gap-4 md:grid-cols-2">
         <HiddenApplicationFields applicationType="funeral_insurance" redirectTo="/portal/funeral-insurance" />
+        <AiMimicButton
+          formId="funeral-cover-application"
+          values={{
+            coverLevel: "Enhanced",
+            beneficiaryName: "Naledi Molefe",
+            beneficiaryRelationship: "Sister",
+            dependents: "Kagiso Molefe - son, age 12\nBoitumelo Molefe - daughter, age 8\nThabo Molefe - spouse",
+          }}
+        />
         <label className="block">
           <span className="text-sm font-semibold">Desired cover level</span>
           <select

@@ -1,5 +1,6 @@
 import { MemberProfileForm } from "@/components/member-profile-form"
 import { MemberPortalShell } from "@/components/member-portal-shell"
+import { ProfilePreviewTrigger } from "@/components/profile-preview-trigger"
 import { calculateProfileCompletion, getMemberPortalData } from "@/lib/member-data"
 import { requireMemberPage } from "@/lib/member-auth"
 
@@ -14,7 +15,10 @@ export default async function ProfilePage() {
         <section className="rounded-lg border bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="text-3xl font-bold tracking-normal">Manage profile</h1>
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="text-3xl font-bold tracking-normal">Manage profile</h1>
+                <ProfilePreviewTrigger />
+              </div>
               <p className="mt-2 text-sm text-muted-foreground">Keep your personal, contact, employment, and supporting document information up to date.</p>
             </div>
             <div className="w-full max-w-xs rounded-lg bg-muted p-4">

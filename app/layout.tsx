@@ -11,8 +11,13 @@ const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono"
 export const metadata: Metadata = {
   title: "BONU Member Services Platform",
   description:
-    "Digital member portal and back-office platform for Botswana Nurses Union services, subscriptions, payments, and case processing.",
+    "Digital self-service and back-office platform for Botswana Nurses Union services, subscriptions, payments, and case processing.",
   generator: "BONU Member Services Platform",
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
 }
 
 export default function RootLayout({

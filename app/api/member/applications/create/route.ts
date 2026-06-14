@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { randomUUID } from "node:crypto"
 import { requireMemberRequest } from "@/lib/member-auth"
+import { BUNDLE_PROVIDERS, BUNDLE_TERMS, BUNDLE_TYPES, isBotswanaMobile } from "@/lib/bundle-service"
 import { createAdminClient } from "@/lib/supabase/admin"
 
 const applicationTypes = new Set([
@@ -11,6 +12,7 @@ const applicationTypes = new Set([
   "micro_loan",
   "merchandise",
   "electronic_contract",
+  "bundle",
 ])
 
 export async function POST(request: Request) {
@@ -27,6 +29,10 @@ export async function POST(request: Request) {
 
     if (!applicationTypes.has(applicationType)) {
       return NextResponse.redirect(new URL(`${redirectTo}?error=missing`, request.url), 303)
+    }
+
+    if (applicationType === "bundle" && !isValidBundleRequest(formData)) {
+      return NextResponse.redirect(new URL(`${redirectTo}?error=bundle-invalid`, request.url), 303)
     }
 
     const { data: member } = await supabase.from("members").select("id").eq("user_id", user?.id).maybeSingle()
@@ -85,6 +91,36 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.redirect(new URL("/portal?error=not-configured", request.url), 303)
   }
+}
+
+function isValidBundleRequest(formData: FormData) {
+  const provider = String(formData.get("provider") ?? "")
+  const bundleType = String(formData.get("bundleType") ?? "")
+  const recipientName = String(formData.get("recipientName") ?? "").trim()
+  const mobileNumber = String(formData.get("mobileNumber") ?? "")
+  const monthlyDeduction = Number(formData.get("monthlyDeduction") ?? 0)
+  const termMonths = String(formData.get("termMonths") ?? "")
+  const activationDay = Number(formData.get("activationDay") ?? 0)
+  const dataAllowance = String(formData.get("dataAllowance") ?? "")
+  const voiceMinutes = String(formData.get("voiceMinutes") ?? "")
+  const requiresData = bundleType === "Data bundle" || bundleType === "Voice and data bundle"
+  const requiresVoice = bundleType === "Voice and data bundle"
+
+  return BUNDLE_PROVIDERS.includes(provider as (typeof BUNDLE_PROVIDERS)[number]) &&
+    BUNDLE_TYPES.includes(bundleType as (typeof BUNDLE_TYPES)[number]) &&
+    recipientName.length >= 2 &&
+    isBotswanaMobile(mobileNumber) &&
+    Number.isFinite(monthlyDeduction) &&
+    monthlyDeduction >= 10 &&
+    monthlyDeduction <= 5000 &&
+    BUNDLE_TERMS.includes(termMonths as (typeof BUNDLE_TERMS)[number]) &&
+    Number.isInteger(activationDay) &&
+    activationDay >= 1 &&
+    activationDay <= 28 &&
+    (!requiresData || Boolean(dataAllowance)) &&
+    (!requiresVoice || Boolean(voiceMinutes)) &&
+    formData.get("deductionConsent") === "accepted" &&
+    formData.get("informationConsent") === "accepted"
 }
 
 async function saveAttachments(memberId: string, formData: FormData) {

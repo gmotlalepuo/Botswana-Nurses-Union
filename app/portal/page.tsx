@@ -1,4 +1,15 @@
-import { CalendarClock, CreditCard, FileCheck2, LayoutDashboard } from "lucide-react"
+import Link from "next/link"
+import {
+  ArrowRight,
+  BriefcaseBusiness,
+  CalendarClock,
+  CreditCard,
+  FileCheck2,
+  FileText,
+  Gavel,
+  HeartHandshake,
+  LayoutDashboard,
+} from "lucide-react"
 import { CustomerApplicationTable } from "@/components/customer-application-table"
 import { InteractiveTable } from "@/components/interactive-table"
 import { MemberDashboardCharts } from "@/components/member-dashboard-charts"
@@ -20,6 +31,40 @@ export default async function MemberPortalPage() {
   return (
     <MemberPortalShell profile={data.profile}>
       <div className="space-y-5">
+        <section className="rounded-xl border bg-gradient-to-br from-white to-primary/5 p-5 shadow-sm">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-wide text-primary">Member services</p>
+            <h1 className="mt-1 text-2xl font-bold tracking-normal">Start a new application</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Choose the service you need and complete its application form.</p>
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <ApplicationCard
+              description="Apply for member funeral cover and related benefits."
+              href="/portal/funeral-insurance"
+              icon={HeartHandshake}
+              title="Funeral Insurance"
+            />
+            <ApplicationCard
+              description="Request legal support through the BONU member service."
+              href="/portal/legal-aid"
+              icon={Gavel}
+              title="Legal Aid"
+            />
+            <ApplicationCard
+              description="Submit an external loan assistance application."
+              href="/portal/external-loans"
+              icon={BriefcaseBusiness}
+              title="External Loans"
+            />
+            <ApplicationCard
+              description="Apply for short-term member micro-lending support."
+              href="/portal/micro-lending"
+              icon={FileText}
+              title="Micro-Lending"
+            />
+          </div>
+        </section>
+
         <section className="grid gap-4 md:grid-cols-4">
           <Metric icon={LayoutDashboard} label="Membership status" value={data.profile?.status ?? "Profile pending"} />
           <Metric icon={CalendarClock} label="Active deductions" value={String(data.monthlyLines.length)} />
@@ -35,11 +80,7 @@ export default async function MemberPortalPage() {
               <p className="text-sm font-bold uppercase tracking-normal text-primary">Monthly membership payments</p>
               <h1 className="text-3xl font-bold tracking-normal">Deduction breakdown</h1>
             </div>
-            <form action="/api/payments/create-checkout" method="post">
-              <input type="hidden" name="itemId" value="membership" />
-              <input type="hidden" name="memberId" value={data.profile?.id ?? user.id} />
-              <button className="rounded-md bg-primary px-4 py-3 font-semibold text-primary-foreground">Pay monthly amount</button>
-            </form>
+            <a href="/portal/membership" className="rounded-md bg-primary px-4 py-3 font-semibold text-primary-foreground">Manage membership payment</a>
           </div>
           <div className="mt-5">
             <InteractiveTable
@@ -94,6 +135,35 @@ export default async function MemberPortalPage() {
         </section>
       </div>
     </MemberPortalShell>
+  )
+}
+
+function ApplicationCard({
+  description,
+  href,
+  icon: Icon,
+  title,
+}: {
+  description: string
+  href: string
+  icon: typeof LayoutDashboard
+  title: string
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex min-h-44 flex-col rounded-lg border bg-white p-4 shadow-sm outline-none transition-colors hover:border-primary/40 hover:bg-primary/[0.03] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+    >
+      <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <Icon className="h-5 w-5" />
+      </div>
+      <h2 className="mt-4 text-lg font-bold">{title}</h2>
+      <p className="mt-1 flex-1 text-sm leading-6 text-muted-foreground">{description}</p>
+      <span className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-primary">
+        Apply now
+        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+      </span>
+    </Link>
   )
 }
 

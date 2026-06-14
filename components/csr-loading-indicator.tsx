@@ -35,9 +35,13 @@ export function CsrLoadingIndicator() {
     }
 
     const handleSubmit = (event: SubmitEvent) => {
-      if (!event.defaultPrevented && event.target instanceof HTMLFormElement) {
-        setLoading(true)
-      }
+      const form = event.target instanceof HTMLFormElement ? event.target : null
+
+      queueMicrotask(() => {
+        if (!event.defaultPrevented && form?.dataset.clientSubmit !== "true") {
+          setLoading(true)
+        }
+      })
     }
 
     const clearLoading = () => setLoading(false)

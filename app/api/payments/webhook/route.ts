@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { completeMerchandiseOrder } from "@/lib/merchandise-orders"
+import { completeStripeMonthlyPayment } from "@/lib/membership-payments"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { stripe } from "@/lib/stripe"
 
@@ -17,6 +18,8 @@ export async function POST(request: Request) {
     const session = event.data.object
     if (session.metadata?.checkoutType === "merchandise" && session.metadata.orderId) {
       await completeMerchandiseOrder(session.metadata.orderId, session.id, String(session.payment_intent ?? ""))
+    } else if (session.metadata?.checkoutType === "membership_monthly") {
+      await completeStripeMonthlyPayment(createAdminClient(), session)
     } else if (session.metadata?.memberId) {
       const admin = createAdminClient()
       await admin.from("notifications").insert({

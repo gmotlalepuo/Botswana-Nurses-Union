@@ -18,6 +18,11 @@ export async function POST(request: Request) {
   }
 
   const { itemId = "membership", memberId = "guest" } = body
+  if (itemId === "membership") {
+    return contentType.includes("application/json")
+      ? NextResponse.json({ error: "Use the membership page to create a monthly payment." }, { status: 400 })
+      : NextResponse.redirect(`${origin}/portal/membership`, 303)
+  }
   const item = checkoutItems.find((entry) => entry.id === itemId) ?? checkoutItems[0]
 
   if (!process.env.STRIPE_SECRET_KEY) {

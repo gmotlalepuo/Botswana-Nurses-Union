@@ -25,7 +25,7 @@ export async function MemberPortalShell({
           <Link href="/portal" className="flex items-center gap-3 text-foreground">
             <Image src="/bonu-logo.jpg" alt="BONU logo" width={44} height={44} className="bonu-brand-logo h-11 w-11 rounded-md object-contain" />
             <div>
-              <p className="text-sm font-semibold text-primary">BONU Member Portal</p>
+              <p className="text-sm font-semibold text-primary">BONU Self Service</p>
               <p className="text-xs text-muted-foreground">{profile?.full_name ?? "Member self-service"}</p>
             </div>
           </Link>

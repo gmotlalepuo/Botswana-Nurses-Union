@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import * as Dialog from "@radix-ui/react-dialog"
 import { Download, ImagePlus, PackagePlus, Pencil, Search, X } from "lucide-react"
 import type { MerchandiseProduct } from "@/lib/merchandise-data"
 import { discountedPrice } from "@/lib/merchandise-data"
@@ -174,16 +175,23 @@ function MerchandiseFormModal({ mode, product, onClose }: { mode: "create" | "up
   const formId = `merchandise-${mode}-${product?.id ?? "new"}`
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-sm sm:p-6" role="dialog" aria-modal="true" aria-labelledby={`${formId}-title`} onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
-      <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl border bg-white shadow-2xl">
+    <Dialog.Root open onOpenChange={(open) => { if (!open) onClose() }}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-[200] bg-slate-950/60 backdrop-blur-sm" />
+        <Dialog.Content
+          className="fixed left-1/2 top-1/2 z-[201] max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border bg-white shadow-2xl focus:outline-none"
+          aria-describedby={`${formId}-description`}
+        >
         <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b bg-white/95 px-5 py-5 backdrop-blur sm:px-7">
           <div>
-            <h3 id={`${formId}-title`} className="text-xl font-bold">{mode === "create" ? "Add new merchandise" : `Edit ${product?.name}`}</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Complete the product information shown in the member shop.</p>
+            <Dialog.Title className="text-xl font-bold">{mode === "create" ? "Add new merchandise" : `Edit ${product?.name}`}</Dialog.Title>
+            <Dialog.Description id={`${formId}-description`} className="mt-1 text-sm text-muted-foreground">Complete the product information shown in the member shop.</Dialog.Description>
           </div>
-          <button className="rounded-full border p-2.5 text-muted-foreground hover:bg-muted" onClick={onClose} aria-label="Close merchandise form">
-            <X className="h-4 w-4" />
-          </button>
+          <Dialog.Close asChild>
+            <button className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border text-muted-foreground hover:bg-muted" aria-label="Close merchandise form" type="button">
+              <X className="h-5 w-5" />
+            </button>
+          </Dialog.Close>
         </header>
 
         <form id={formId} action="/api/csr/merchandise/products" method="post" encType="multipart/form-data" className="grid gap-5 p-5 sm:grid-cols-2 sm:p-7">
@@ -235,13 +243,16 @@ function MerchandiseFormModal({ mode, product, onClose }: { mode: "create" | "up
         </form>
 
         <footer className="sticky bottom-0 flex justify-end gap-2 border-t bg-white/95 px-5 py-4 backdrop-blur sm:px-7">
-          <button className="rounded-md border bg-white px-4 py-2.5 text-sm font-semibold hover:bg-muted" onClick={onClose}>Cancel</button>
+          <Dialog.Close asChild>
+            <button className="rounded-md border bg-white px-4 py-2.5 text-sm font-semibold hover:bg-muted" type="button">Cancel</button>
+          </Dialog.Close>
           <button form={formId} className="rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">
             {mode === "create" ? "Add merchandise" : "Save changes"}
           </button>
         </footer>
-      </div>
-    </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }
 

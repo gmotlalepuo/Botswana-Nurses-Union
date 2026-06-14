@@ -19,7 +19,7 @@ export type MemberProfile = {
   physical_address: string | null
   postal_address: string | null
   district: string | null
-  region: string | null
+  council: string | null
   work_station: string | null
   department: string | null
   employment_date: string | null
@@ -54,6 +54,11 @@ export type MemberPayment = {
   currency: string
   status: string
   paid_at: string | null
+  payment_kind: string | null
+  payment_month: string | null
+  payment_source: string | null
+  expected_amount: number | null
+  metadata: Record<string, unknown>
   created_at: string
 }
 
@@ -95,6 +100,19 @@ export type MemberDocument = {
   created_at: string
 }
 
+export type MemberComplaint = {
+  id: string
+  subject: string
+  category: string
+  description: string
+  priority: string
+  status: string
+  resolution_notes: string | null
+  resolved_at: string | null
+  created_at: string
+  updated_at: string
+}
+
 export type MonthlyDeductionLine = {
   id: string
   label: string
@@ -110,6 +128,7 @@ export type MemberPortalData = {
   payments: MemberPayment[]
   merchandiseOrders: MemberMerchandiseOrder[]
   documents: MemberDocument[]
+  complaints: MemberComplaint[]
   monthlyLines: MonthlyDeductionLine[]
   monthlyTotal: number
   outstandingBalance: number
@@ -117,18 +136,25 @@ export type MemberPortalData = {
 
 export async function getMemberPortalData(userId: string): Promise<MemberPortalData> {
   const supabase = createAdminClient()
-  const { data: profile } = await supabase.from("members").select("*").eq("user_id", userId).maybeSingle()
+  const { data: rawProfile } = await supabase.from("members").select("*").eq("user_id", userId).maybeSingle()
+  const profile = rawProfile
+    ? {
+        ...rawProfile,
+        council: rawProfile.council ?? rawProfile.region ?? null,
+      }
+    : null
 
   if (!profile) {
     return emptyPortalData()
   }
 
-  const [applications, subscriptions, payments, documents, merchandiseOrders] = await Promise.all([
+  const [applications, subscriptions, payments, documents, merchandiseOrders, complaints] = await Promise.all([
     supabase.from("service_applications").select("*").eq("member_id", profile.id).order("submitted_at", { ascending: false }),
     supabase.from("subscriptions").select("*").eq("member_id", profile.id).eq("active", true).order("started_on", { ascending: false }),
     supabase.from("payment_transactions").select("*").eq("member_id", profile.id).order("created_at", { ascending: false }).limit(100),
     supabase.from("member_documents").select("*").eq("member_id", profile.id).order("created_at", { ascending: false }),
     supabase.from("merchandise_orders").select("*, merchandise_order_items(*)").eq("member_id", profile.id).order("created_at", { ascending: false }).limit(100),
+    supabase.from("complaints").select("*").eq("member_id", profile.id).order("created_at", { ascending: false }).limit(500),
   ])
 
   const applicationRows = ((applications.data ?? []) as MemberApplication[])
@@ -145,6 +171,7 @@ export async function getMemberPortalData(userId: string): Promise<MemberPortalD
     payments: paymentRows,
     merchandiseOrders: normalizeMerchandiseOrders(merchandiseOrders.data ?? []),
     documents: (documents.data ?? []) as MemberDocument[],
+    complaints: (complaints.data ?? []) as MemberComplaint[],
     monthlyLines,
     monthlyTotal: monthlyLines.reduce((sum, line) => sum + line.amount, 0),
     outstandingBalance,
@@ -236,6 +263,7 @@ function emptyPortalData(): MemberPortalData {
     payments: [],
     merchandiseOrders: [],
     documents: [],
+    complaints: [],
     monthlyLines: [],
     monthlyTotal: 0,
     outstandingBalance: 0,
@@ -257,6 +285,7 @@ function normalizeMerchandiseOrders(rows: unknown[]): MemberMerchandiseOrder[] {
 }
 
 export function friendlyService(value: string) {
+  if (value === "bundle") return "Bundles"
   return value.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
@@ -279,7 +308,7 @@ export function calculateProfileCompletion(profile: MemberProfile | null, docume
     "physical_address",
     "postal_address",
     "district",
-    "region",
+    "council",
     "work_station",
     "department",
     "employment_date",

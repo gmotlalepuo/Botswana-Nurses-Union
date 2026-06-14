@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     }
 
     const formData = await request.formData()
-    const payload = {
+    const profileFields = {
       full_name: String(formData.get("fullName") ?? ""),
       national_id: String(formData.get("nationalId") ?? "") || null,
       date_of_birth: String(formData.get("dateOfBirth") ?? "") || null,
@@ -27,19 +27,21 @@ export async function POST(request: Request) {
       physical_address: String(formData.get("physicalAddress") ?? "") || null,
       postal_address: String(formData.get("postalAddress") ?? "") || null,
       district: String(formData.get("district") ?? "") || null,
-      region: String(formData.get("region") ?? "") || null,
       work_station: String(formData.get("workStation") ?? "") || null,
       department: String(formData.get("department") ?? "") || null,
       employment_date: String(formData.get("employmentDate") ?? "") || null,
       monthly_salary: Number(formData.get("monthlySalary") ?? 0) || null,
       updated_at: new Date().toISOString(),
     }
+    const council = String(formData.get("council") ?? "") || null
 
-    if (!payload.full_name || !payload.mobile_number || !payload.email) {
+    if (!profileFields.full_name || !profileFields.mobile_number || !profileFields.email) {
       return NextResponse.redirect(new URL("/portal/profile?error=missing", request.url), 303)
     }
 
     const admin = createAdminClient()
+    const locationColumn = await getCouncilColumn(admin)
+    const payload = { ...profileFields, [locationColumn]: council }
     const { data: existing } = await admin.from("members").select("id").eq("user_id", user?.id).maybeSingle()
     const memberResult = existing
       ? await admin.from("members").update(payload).eq("id", existing.id).select("id").single()
@@ -70,6 +72,11 @@ export async function POST(request: Request) {
     console.error("Member profile submit failed", error)
     return NextResponse.redirect(new URL("/portal/profile?error=not-configured", request.url), 303)
   }
+}
+
+async function getCouncilColumn(admin: ReturnType<typeof createAdminClient>) {
+  const { error } = await admin.from("members").select("council").limit(1)
+  return error ? "region" : "council"
 }
 
 async function saveAttachments(

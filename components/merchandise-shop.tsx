@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { PackageCheck, Search, ShoppingCart, Trash2 } from "lucide-react"
+import { PackageCheck, Search, ShoppingCart, Sparkles, Trash2 } from "lucide-react"
 import type { MerchandiseProduct } from "@/lib/merchandise-data"
 import { discountedPrice } from "@/lib/merchandise-data"
 
@@ -84,6 +84,28 @@ export function MerchandiseShop({ products, memberId }: { products: MerchandiseP
     setCart((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, quantity: Math.max(1, Math.min(quantity, item.stockCount)) } : item))
   }
 
+  function fillDemoOrder() {
+    const product = products.find((item) => item.name.toLowerCase().includes("scrub") && item.stock_count > 0)
+      ?? products.find((item) => item.stock_count > 0)
+
+    if (product) {
+      setCart([{
+        productId: product.id,
+        name: product.name,
+        price: Number(product.price),
+        discountPercent: Number(product.discount_percent ?? 0),
+        quantity: Math.min(2, Number(product.stock_count)),
+        color: product.colors.includes("Navy") ? "Navy" : (product.colors[0] ?? "Default"),
+        stockCount: Number(product.stock_count),
+      }])
+    }
+
+    setPaymentOption("credit")
+    setMonthlyDeduction("180")
+    setDeliveryMethod("delivery")
+    setDeliveryAddress("Plot 2148, Block 8, Gaborone, Botswana")
+  }
+
   return (
     <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_360px]">
       <section className="space-y-4">
@@ -132,6 +154,18 @@ export function MerchandiseShop({ products, memberId }: { products: MerchandiseP
         <div className="flex items-center gap-2">
           <ShoppingCart className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-bold">Cart</h2>
+        </div>
+        <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
+          <p className="text-sm font-bold text-primary">AI Mimic</p>
+          <p className="mt-1 text-xs text-muted-foreground">Build a realistic Botswana demonstration order with delivery and monthly deduction details.</p>
+          <button
+            className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-primary/30 bg-white px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/10"
+            type="button"
+            onClick={fillDemoOrder}
+          >
+            <Sparkles className="h-4 w-4" />
+            Fill demo order
+          </button>
         </div>
         <div className="mt-4 space-y-3">
           {cart.map((item, index) => (

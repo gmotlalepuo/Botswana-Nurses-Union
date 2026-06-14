@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { FormField, FormSelect, FormTextArea, HiddenApplicationFields } from "@/components/member-application-form"
+import { AiMimicButton } from "@/components/ai-mimic-button"
 
 const loanTypes = [
   {
@@ -71,8 +72,18 @@ export function ExternalLoansForm() {
         ) : null}
       </section>
 
-      <form action="/api/member/applications/create" method="post" className="grid gap-4 md:grid-cols-2">
+      <form id="external-loan-application" action="/api/member/applications/create" method="post" className="grid gap-4 md:grid-cols-2">
         <HiddenApplicationFields applicationType="loan_assistance" redirectTo="/portal/external-loans" />
+        <AiMimicButton
+          formId="external-loan-application"
+          values={{
+            loanType: "Personal loan",
+            preferredBank: "Bank Gaborone",
+            requestedAmount: "45000",
+            termMonths: "36",
+            loanPurpose: "Payment of school fees and essential home improvements at the member's family residence in Mogoditshane.",
+          }}
+        />
         <FormSelect name="loanType" label="Type of loan" required options={loanTypes.map((loan) => loan.label)} />
         <FormSelect name="preferredBank" label="Preferred bank" required options={["Bank Gaborone", "BancABC", "FNBB", "Stanbic", "Absa", "Other partner institution"]} />
         <FormField name="requestedAmount" label="Requested amount" type="number" required />

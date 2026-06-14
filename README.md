@@ -55,6 +55,36 @@ Default development credentials:
 
 Then log in at `/auth/login`. The seeded admin email is confirmed automatically for development.
 
+## Development Member Logins
+
+Apply `lib/db/migrations/010-replace-region-with-council.sql`, then seed 30 Botswana member profiles:
+
+```bash
+npm run seed:members
+```
+
+- Emails: `member01@bonu-demo.co.bw` through `member30@bonu-demo.co.bw`
+- Password: `12345678`
+- Role: `member`
+
+## Monthly Membership Payments
+
+Apply `lib/db/migrations/011-monthly-membership-payments.sql` in the Supabase SQL editor. This migration:
+
+- creates one combined membership payment per member and payment month
+- prevents duplicate Stripe and CSR-import payments for the same month
+- stores service-level deduction breakdowns in payment metadata
+- creates CSR payment-import audit records
+- schedules suspension after the five-day grace period using `pg_cron`
+
+The CSR payment template is available from `/csr/payments`. Supported upload formats are CSV, XLS, and XLSX with these columns:
+
+```text
+Name, National ID / Omang, Council, Email, Phone, Payment Month, Total Deductions
+```
+
+Use `YYYY-MM` for Payment Month. National ID / Omang is the matching key; other profile differences are accepted and reported as warnings.
+
 ## Forgot Password
 
 In Supabase, add this redirect URL under **Authentication > URL Configuration > Redirect URLs**:

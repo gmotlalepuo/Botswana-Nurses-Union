@@ -2,6 +2,7 @@ import { ApplicationHistory, FormAttachment, FormField, FormTextArea, HiddenAppl
 import { MemberPortalShell } from "@/components/member-portal-shell"
 import { getMemberPortalData } from "@/lib/member-data"
 import { requireMemberPage } from "@/lib/member-auth"
+import { AiMimicButton } from "@/components/ai-mimic-button"
 
 export default async function MicroLendingPage() {
   const user = await requireMemberPage()
@@ -13,8 +14,18 @@ export default async function MicroLendingPage() {
       <div className="space-y-5">
         <section className="rounded-lg border bg-white p-5 shadow-sm">
           <h1 className="text-3xl font-bold tracking-normal">Apply for internal micro-loan</h1>
-          <form action="/api/member/applications/create" method="post" encType="multipart/form-data" className="mt-5 grid gap-4 md:grid-cols-3">
+          <form id="micro-loan-application" action="/api/member/applications/create" method="post" encType="multipart/form-data" className="mt-5 grid gap-4 md:grid-cols-3">
             <HiddenApplicationFields applicationType="micro_loan" redirectTo="/portal/micro-lending" />
+            <AiMimicButton
+              formId="micro-loan-application"
+              values={{
+                requestedAmount: "12000",
+                termMonths: "12",
+                monthlyDeduction: "1100",
+                loanPurpose: "Emergency household repairs and school expenses for dependents in Gaborone.",
+              }}
+              note="File attachments cannot be filled automatically. Select the required documents before submitting."
+            />
             <FormField name="requestedAmount" label="Requested amount" type="number" required />
             <FormField name="termMonths" label="Repayment term in months" type="number" required />
             <FormField name="monthlyDeduction" label="Proposed monthly repayment" type="number" required />

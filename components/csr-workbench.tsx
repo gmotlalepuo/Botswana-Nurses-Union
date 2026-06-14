@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import * as Dialog from "@radix-ui/react-dialog"
 import {
   ArrowDownUp,
   BadgeCheck,
@@ -240,7 +241,7 @@ function MembersSection({ members }: { members: CsrMember[] }) {
                   <p className="text-xs text-muted-foreground">{member.email} · {member.mobile_number}</p>
                 </td>
                 <td className="px-4 py-3">{member.employer ?? "Not captured"}</td>
-                <td className="px-4 py-3">{[member.district, member.region].filter(Boolean).join(", ") || "Not captured"}</td>
+                <td className="px-4 py-3">{[member.district, member.council].filter(Boolean).join(", ") || "Not captured"}</td>
                 <td className="px-4 py-3 capitalize">{member.status}</td>
                 <td className="px-4 py-3">{formatDate(member.created_at)}</td>
                 <td className="px-4 py-3">
@@ -304,8 +305,13 @@ function MemberProfileModal({ member, onClose }: { member: CsrMember; onClose: (
     .toUpperCase()
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-sm sm:p-6" role="dialog" aria-modal="true" aria-labelledby="member-profile-title" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
-      <div className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-2xl border bg-slate-50 shadow-2xl">
+    <Dialog.Root open onOpenChange={(open) => { if (!open) onClose() }}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-[200] bg-slate-950/60 backdrop-blur-sm" />
+        <Dialog.Content
+          className="fixed left-1/2 top-1/2 z-[201] max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-5xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border bg-slate-50 shadow-2xl focus:outline-none"
+          aria-describedby="member-profile-description"
+        >
         <header className="sticky top-0 z-10 border-b bg-white/95 px-5 py-5 backdrop-blur sm:px-7">
           <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 items-center gap-4">
@@ -314,20 +320,22 @@ function MemberProfileModal({ member, onClose }: { member: CsrMember; onClose: (
               </div>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 id="member-profile-title" className="truncate text-xl font-bold sm:text-2xl">{member.full_name}</h3>
+                  <Dialog.Title className="truncate text-xl font-bold sm:text-2xl">{member.full_name}</Dialog.Title>
                   <span className={`rounded-full px-2.5 py-1 text-xs font-bold capitalize ${memberStatusClass(member.status)}`}>
                     {member.status}
                   </span>
                 </div>
-                <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+                <Dialog.Description id="member-profile-description" className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
                   <BadgeCheck className="h-4 w-4 text-primary" />
                   {member.membership_number || "Membership number pending"}
-                </p>
+                </Dialog.Description>
               </div>
             </div>
-            <button className="shrink-0 rounded-full border bg-white p-2.5 text-muted-foreground shadow-sm transition hover:bg-muted hover:text-foreground" onClick={onClose} aria-label="Close profile">
-              <X className="h-4 w-4" />
-            </button>
+            <Dialog.Close asChild>
+              <button className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border bg-white text-muted-foreground shadow-sm transition hover:bg-muted hover:text-foreground" aria-label="Close profile" type="button">
+                <X className="h-5 w-5" />
+              </button>
+            </Dialog.Close>
           </div>
         </header>
 
@@ -360,7 +368,7 @@ function MemberProfileModal({ member, onClose }: { member: CsrMember; onClose: (
               <ProfileField label="Physical address" value={member.physical_address} fullWidth />
               <ProfileField label="Postal address" value={member.postal_address} fullWidth />
               <ProfileField label="District" value={member.district} />
-              <ProfileField label="Region" value={member.region} />
+              <ProfileField label="Council" value={member.council} />
             </ProfileSection>
 
             <ProfileSection icon={IdCard} title="Membership record">
@@ -373,12 +381,15 @@ function MemberProfileModal({ member, onClose }: { member: CsrMember; onClose: (
         </div>
 
         <footer className="sticky bottom-0 flex justify-end border-t bg-white/95 px-5 py-4 backdrop-blur sm:px-7">
-          <button className="rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90" onClick={onClose}>
-            Close profile
-          </button>
+          <Dialog.Close asChild>
+            <button className="rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90" type="button">
+              Close profile
+            </button>
+          </Dialog.Close>
         </footer>
-      </div>
-    </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }
 
@@ -440,7 +451,7 @@ function memberStatusClass(status: string) {
 }
 
 function memberSortValue(member: CsrMember, key: MemberSortKey) {
-  if (key === "location") return [member.district, member.region].filter(Boolean).join(" ")
+  if (key === "location") return [member.district, member.council].filter(Boolean).join(" ")
   return String(member[key] ?? "")
 }
 
@@ -589,7 +600,7 @@ function ApplicationsSection({ applications, redirectTo }: { applications: CsrAp
   const [sortBy, setSortBy] = useState("newest")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const showInsuranceType = !["/micro-lending", "/external-loans"].some((path) => redirectTo.endsWith(path))
+  const showInsuranceType = !["/micro-lending", "/external-loans", "/bundles"].some((path) => redirectTo.endsWith(path))
   const typeColumnLabel = redirectTo.endsWith("/electronic-contracts") ? "Requested" : "Insurance Type"
   const rows = useMemo(() => {
     const filtered = applications.filter((application) => {
@@ -677,8 +688,13 @@ function ApplicationDetailsModal({ application, onClose }: { application: CsrApp
   const detailEntries = Object.entries(application.details ?? {}).filter(([key, value]) => !key.startsWith("__") && value !== null && value !== "")
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-sm sm:p-6" role="dialog" aria-modal="true" aria-labelledby="application-details-title" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
-      <div className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-2xl border bg-slate-50 shadow-2xl">
+    <Dialog.Root open onOpenChange={(open) => { if (!open) onClose() }}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-[200] bg-slate-950/60 backdrop-blur-sm" />
+        <Dialog.Content
+          className="fixed left-1/2 top-1/2 z-[201] max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-4xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border bg-slate-50 shadow-2xl focus:outline-none"
+          aria-describedby="application-details-description"
+        >
         <header className="sticky top-0 z-10 border-b bg-white/95 px-5 py-5 backdrop-blur sm:px-7">
           <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 items-center gap-4">
@@ -687,17 +703,19 @@ function ApplicationDetailsModal({ application, onClose }: { application: CsrApp
               </span>
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 id="application-details-title" className="text-xl font-bold sm:text-2xl">{friendlyService(application.application_type)}</h3>
+                  <Dialog.Title className="text-xl font-bold sm:text-2xl">{friendlyService(application.application_type)}</Dialog.Title>
                   <span className={`rounded-full px-2.5 py-1 text-xs font-bold capitalize ${applicationStatusClass(application.status)}`}>
                     {application.status.replace(/_/g, " ")}
                   </span>
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground">Submitted by {memberName} on {formatDate(application.submitted_at)}</p>
+                <Dialog.Description id="application-details-description" className="mt-1 text-sm text-muted-foreground">Submitted by {memberName} on {formatDate(application.submitted_at)}</Dialog.Description>
               </div>
             </div>
-            <button className="shrink-0 rounded-full border bg-white p-2.5 text-muted-foreground shadow-sm hover:bg-muted hover:text-foreground" onClick={onClose} aria-label="Close application details">
-              <X className="h-4 w-4" />
-            </button>
+            <Dialog.Close asChild>
+              <button className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border bg-white text-muted-foreground shadow-sm hover:bg-muted hover:text-foreground" aria-label="Close application details" type="button">
+                <X className="h-5 w-5" />
+              </button>
+            </Dialog.Close>
           </div>
         </header>
 
@@ -781,10 +799,13 @@ function ApplicationDetailsModal({ application, onClose }: { application: CsrApp
         </div>
 
         <footer className="sticky bottom-0 flex justify-end border-t bg-white/95 px-5 py-4 backdrop-blur sm:px-7">
-          <button className="rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90" onClick={onClose}>Close details</button>
+          <Dialog.Close asChild>
+            <button className="rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90" type="button">Close details</button>
+          </Dialog.Close>
         </footer>
-      </div>
-    </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }
 
@@ -839,7 +860,7 @@ function PaymentsSection({ payments }: { payments: CsrPayment[] }) {
   const [pageSize, setPageSize] = useState(10)
   const rows = useMemo(() => {
     const filtered = payments.filter((payment) => {
-      const text = [payment.description, payment.status, payment.currency, payment.members?.full_name ?? "", payment.members?.email ?? ""].join(" ").toLowerCase()
+      const text = [payment.description, payment.status, payment.currency, payment.payment_month ?? "", payment.payment_source ?? "", payment.members?.full_name ?? "", payment.members?.email ?? ""].join(" ").toLowerCase()
       return text.includes(query.toLowerCase()) && (statusFilter === "all" || payment.status === statusFilter)
     })
     return [...filtered].sort((left, right) => {
@@ -862,13 +883,13 @@ function PaymentsSection({ payments }: { payments: CsrPayment[] }) {
       <div className="overflow-hidden rounded-lg border">
         <table className="w-full min-w-[760px] text-left text-sm">
           <thead className="bg-muted text-muted-foreground">
-            <tr><th className="px-4 py-3">Member</th><th className="px-4 py-3">Description</th><th className="px-4 py-3">Amount</th><th className="px-4 py-3">Status</th></tr>
+            <tr><th className="px-4 py-3">Member</th><th className="px-4 py-3">Description</th><th className="px-4 py-3">Month</th><th className="px-4 py-3">Source</th><th className="px-4 py-3">Amount</th><th className="px-4 py-3">Status</th></tr>
           </thead>
           <tbody>
             {pagination.visibleRows.map((payment) => (
-              <tr key={payment.id} className="border-t"><td className="px-4 py-3">{payment.members?.full_name ?? payment.members?.email ?? "Member"}</td><td className="px-4 py-3">{payment.description}</td><td className="px-4 py-3">{formatCurrency(Number(payment.amount), payment.currency)}</td><td className="px-4 py-3 capitalize">{payment.status}</td></tr>
+              <tr key={payment.id} className="border-t"><td className="px-4 py-3">{payment.members?.full_name ?? payment.members?.email ?? "Member"}</td><td className="px-4 py-3">{payment.description}</td><td className="px-4 py-3">{payment.payment_month?.slice(0, 7) ?? "-"}</td><td className="px-4 py-3 capitalize">{payment.payment_source?.replace(/_/g, " ") ?? "-"}</td><td className="px-4 py-3">{formatCurrency(Number(payment.amount), payment.currency)}</td><td className="px-4 py-3 capitalize">{payment.status}</td></tr>
             ))}
-            {rows.length === 0 && <EmptyRow colSpan={4} text="No payment records found." />}
+            {rows.length === 0 && <EmptyRow colSpan={6} text="No payment records found." />}
           </tbody>
         </table>
       </div>
@@ -886,7 +907,7 @@ function ComplaintsSection({ complaints }: { complaints: CsrComplaint[] }) {
   const [pageSize, setPageSize] = useState(10)
   const rows = useMemo(() => {
     const filtered = complaints.filter((complaint) => {
-      const text = [complaint.subject, complaint.category, complaint.priority, complaint.status, complaint.members?.full_name ?? "", complaint.resolution_notes ?? ""].join(" ").toLowerCase()
+      const text = [complaint.subject, complaint.description, complaint.category, complaint.priority, complaint.status, complaint.members?.full_name ?? "", complaint.resolution_notes ?? ""].join(" ").toLowerCase()
       return text.includes(query.toLowerCase()) &&
         (statusFilter === "all" || complaint.status === statusFilter) &&
         (priorityFilter === "all" || complaint.priority === priorityFilter)
@@ -913,13 +934,16 @@ function ComplaintsSection({ complaints }: { complaints: CsrComplaint[] }) {
       <div className="overflow-hidden rounded-lg border">
         <table className="w-full min-w-[980px] text-left text-sm">
           <thead className="bg-muted text-muted-foreground">
-            <tr><th className="px-4 py-3">Member</th><th className="px-4 py-3">Subject</th><th className="px-4 py-3">Category</th><th className="px-4 py-3">Priority</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Resolution notes</th><th className="px-4 py-3">Action</th></tr>
+            <tr><th className="px-4 py-3">Member</th><th className="px-4 py-3">Complaint</th><th className="px-4 py-3">Category</th><th className="px-4 py-3">Priority</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Resolution notes</th><th className="px-4 py-3">Action</th></tr>
           </thead>
           <tbody>
             {pagination.visibleRows.map((complaint) => (
               <tr key={complaint.id} className="border-t align-top">
                 <td className="px-4 py-3">{complaint.members?.full_name ?? complaint.members?.email ?? "Member"}</td>
-                <td className="px-4 py-3 font-semibold">{complaint.subject}</td>
+                <td className="max-w-md px-4 py-3">
+                  <p className="font-semibold">{complaint.subject}</p>
+                  <p className="mt-1 whitespace-pre-wrap text-xs leading-5 text-muted-foreground">{complaint.description}</p>
+                </td>
                 <td className="px-4 py-3">{complaint.category}</td>
                 <td className="px-4 py-3 capitalize">{complaint.priority}</td>
                 <td className="px-4 py-3 capitalize">{complaint.status.replace(/_/g, " ")}</td>

@@ -9,7 +9,8 @@ create type bonu_application_type as enum (
   'loan_assistance',
   'micro_loan',
   'merchandise',
-  'electronic_contract'
+  'electronic_contract',
+  'bundle'
 );
 create type bonu_application_status as enum ('submitted', 'in_review', 'more_info_required', 'approved', 'rejected', 'fulfilled');
 create type bonu_payment_status as enum ('pending', 'paid', 'failed', 'refunded', 'reversed');
@@ -70,7 +71,7 @@ create table public.members (
   physical_address text,
   postal_address text,
   district text,
-  region text,
+  council text,
   work_station text,
   department text,
   employment_date date,
@@ -146,7 +147,31 @@ create table public.payment_transactions (
   currency text not null default 'BWP',
   status bonu_payment_status not null default 'pending',
   paid_at timestamptz,
+  payment_kind text,
+  payment_month date,
+  payment_source text,
+  expected_amount numeric(12, 2),
+  import_batch_id uuid,
   metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create unique index payment_transactions_membership_month_unique
+  on public.payment_transactions (member_id, payment_month)
+  where payment_kind = 'membership_monthly';
+
+create table public.payment_import_batches (
+  id uuid primary key default gen_random_uuid(),
+  uploaded_by uuid references auth.users(id) on delete set null,
+  file_name text not null,
+  payment_month date,
+  total_rows integer not null default 0,
+  paid_rows integer not null default 0,
+  unmatched_rows integer not null default 0,
+  duplicate_rows integer not null default 0,
+  invalid_rows integer not null default 0,
+  warning_rows integer not null default 0,
+  result jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
 
@@ -239,6 +264,7 @@ alter table public.case_pulses enable row level security;
 alter table public.case_pulse_likes enable row level security;
 alter table public.subscriptions enable row level security;
 alter table public.payment_transactions enable row level security;
+alter table public.payment_import_batches enable row level security;
 alter table public.merchandise_products enable row level security;
 alter table public.merchandise_orders enable row level security;
 alter table public.merchandise_order_items enable row level security;
@@ -361,6 +387,54 @@ create policy "Staff can manage payments"
   on public.payment_transactions for all
   using (public.has_staff_role())
   with check (public.has_staff_role());
+
+create policy "Staff can manage payment imports"
+  on public.payment_import_batches for all
+  using (public.has_staff_role())
+  with check (public.has_staff_role());
+
+create or replace function public.suspend_overdue_memberships()
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  suspended_count integer := 0;
+  botswana_today date := (now() at time zone 'Africa/Gaborone')::date;
+  current_month date := date_trunc('month', botswana_today)::date;
+  required_month date := date_trunc('month', botswana_today - interval '1 month')::date;
+begin
+  if extract(day from botswana_today) < 6 then
+    return 0;
+  end if;
+
+  update public.members member
+  set status = 'suspended',
+      updated_at = now()
+  where member.status = 'active'
+    and member.created_at < current_month
+    and exists (
+      select 1
+      from public.service_applications application
+      where application.member_id = member.id
+        and application.status in ('approved', 'fulfilled')
+        and coalesce(application.monthly_deduction, 0) > 0
+        and coalesce(application.decided_at, application.updated_at, application.created_at) < current_month
+    )
+    and not exists (
+      select 1
+      from public.payment_transactions payment
+      where payment.member_id = member.id
+        and payment.payment_kind = 'membership_monthly'
+        and payment.payment_month = required_month
+        and payment.status = 'paid'
+    );
+
+  get diagnostics suspended_count = row_count;
+  return suspended_count;
+end;
+$$;
 
 create policy "Anyone signed in can read active merchandise products"
   on public.merchandise_products for select

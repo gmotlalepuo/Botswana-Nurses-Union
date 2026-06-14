@@ -53,6 +53,7 @@ const applicationLabels: Record<string, string> = {
   micro_loan: "Micro-loans",
   merchandise: "Merchandise",
   electronic_contract: "Electronic contracts",
+  bundle: "Bundles",
 }
 
 const statusLabels: Record<string, string> = {
@@ -206,6 +207,7 @@ function buildQueues(rows: ApplicationRow[]) {
     { name: "Micro-loans", type: "micro_loan", owner: "Finance Desk" },
     { name: "Merchandise orders", type: "merchandise", owner: "Supplier Desk" },
     { name: "Electronic contracts", type: "electronic_contract", owner: "Contracts Desk" },
+    { name: "Bundle requests", type: "bundle", owner: "Partner Services Desk" },
   ].map((queue) => {
     const count = rows.filter(
       (row) => row.application_type === queue.type && ["submitted", "in_review", "more_info_required"].includes(row.status),

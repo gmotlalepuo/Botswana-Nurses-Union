@@ -1,5 +1,6 @@
 "use client"
 
+import type { ReactNode } from "react"
 import { useMemo, useState } from "react"
 import { ArrowDownUp, Download, Search } from "lucide-react"
 import { StatusBadge } from "@/components/status-badge"
@@ -15,14 +16,18 @@ type InteractiveTableProps = {
   rows: Record<string, string | number | null | undefined>[]
   emptyMessage: string
   exportFileName: string
+  minTableWidth?: number
+  renderCell?: (row: Record<string, string | number | null | undefined>, column: TableColumn) => ReactNode
 }
 
-export function InteractiveTable({ columns, rows, emptyMessage, exportFileName }: InteractiveTableProps) {
+export function InteractiveTable({ columns, rows, emptyMessage, exportFileName, minTableWidth, renderCell }: InteractiveTableProps) {
   const [query, setQuery] = useState("")
   const [filterKey, setFilterKey] = useState("all")
   const [filterValue, setFilterValue] = useState("all")
   const [sortKey, setSortKey] = useState(columns[0]?.key ?? "")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   const filterableColumns = columns.filter((column) => column.filterable)
   const filterOptions = useMemo(() => {
@@ -53,8 +58,15 @@ export function InteractiveTable({ columns, rows, emptyMessage, exportFileName }
         return sortDirection === "asc" ? result : -result
       })
   }, [columns, filterKey, filterValue, query, rows, sortDirection, sortKey])
+  const pageCount = Math.max(1, Math.ceil(visibleRows.length / pageSize))
+  const currentPage = Math.min(page, pageCount)
+  const pageStart = (currentPage - 1) * pageSize
+  const paginatedRows = visibleRows.slice(pageStart, pageStart + pageSize)
+  const showingStart = visibleRows.length === 0 ? 0 : pageStart + 1
+  const showingEnd = Math.min(pageStart + pageSize, visibleRows.length)
 
   function updateSort(key: string) {
+    setPage(1)
     if (sortKey === key) {
       setSortDirection((current) => (current === "asc" ? "desc" : "asc"))
       return
@@ -87,7 +99,11 @@ export function InteractiveTable({ columns, rows, emptyMessage, exportFileName }
             className="w-full bg-transparent text-sm outline-none"
             placeholder="Search table"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              setQuery(event.target.value)
+              setPage(1)
+            }}
+            aria-label="Search table"
           />
         </label>
         <div className="flex flex-wrap gap-2">
@@ -97,6 +113,7 @@ export function InteractiveTable({ columns, rows, emptyMessage, exportFileName }
             onChange={(event) => {
               setFilterKey(event.target.value)
               setFilterValue("all")
+              setPage(1)
             }}
           >
             <option value="all">No filter</option>
@@ -110,7 +127,10 @@ export function InteractiveTable({ columns, rows, emptyMessage, exportFileName }
             <select
               className="rounded-md border bg-white/85 px-3 py-2 text-sm font-medium shadow-sm"
               value={filterValue}
-              onChange={(event) => setFilterValue(event.target.value)}
+              onChange={(event) => {
+                setFilterValue(event.target.value)
+                setPage(1)
+              }}
             >
               <option value="all">All</option>
               {filterOptions.map((option) => (
@@ -120,7 +140,20 @@ export function InteractiveTable({ columns, rows, emptyMessage, exportFileName }
               ))}
             </select>
           )}
-          <button className="inline-flex items-center gap-2 rounded-md border bg-white/85 px-3 py-2 text-sm font-semibold shadow-sm hover:border-primary/30 hover:bg-white" onClick={exportCsv}>
+          <select
+            className="rounded-md border bg-white/85 px-3 py-2 text-sm font-medium shadow-sm"
+            value={pageSize}
+            onChange={(event) => {
+              setPageSize(Number(event.target.value))
+              setPage(1)
+            }}
+            aria-label="Rows per page"
+          >
+            <option value={10}>10 per page</option>
+            <option value={25}>25 per page</option>
+            <option value={50}>50 per page</option>
+          </select>
+          <button type="button" className="inline-flex items-center gap-2 rounded-md border bg-white/85 px-3 py-2 text-sm font-semibold shadow-sm hover:border-primary/30 hover:bg-white" onClick={exportCsv}>
             <Download className="h-4 w-4" />
             Export
           </button>
@@ -130,13 +163,13 @@ export function InteractiveTable({ columns, rows, emptyMessage, exportFileName }
       <div className="max-w-full overflow-x-auto rounded-lg border bg-white/72 shadow-sm backdrop-blur">
         <table
           className="w-full text-left text-sm"
-          style={{ minWidth: `${Math.max(680, columns.length * 180)}px` }}
+          style={{ minWidth: `${minTableWidth ?? Math.max(680, columns.length * 180)}px` }}
         >
           <thead className="bg-muted text-muted-foreground">
             <tr>
               {columns.map((column) => (
                 <th key={column.key} className="whitespace-nowrap px-4 py-3 font-semibold">
-                  <button className="inline-flex items-center gap-2 text-left" onClick={() => updateSort(column.key)}>
+                  <button type="button" className="inline-flex items-center gap-2 text-left" onClick={() => updateSort(column.key)}>
                     {column.label}
                     <ArrowDownUp className="h-3.5 w-3.5 shrink-0" />
                   </button>
@@ -145,12 +178,16 @@ export function InteractiveTable({ columns, rows, emptyMessage, exportFileName }
             </tr>
           </thead>
           <tbody>
-            {visibleRows.length > 0 ? (
-              visibleRows.map((row, index) => (
+            {paginatedRows.length > 0 ? (
+              paginatedRows.map((row, index) => (
                 <tr key={String(row.id ?? index)} className="border-t border-border/70">
                   {columns.map((column) => (
                     <td key={column.key} className="px-4 py-3 align-top">
-                      {column.key === "status" && row[column.key] ? <StatusBadge status={String(row[column.key])} /> : (row[column.key] ?? "")}
+                      {renderCell
+                        ? renderCell(row, column)
+                        : column.key === "status" && row[column.key]
+                          ? <StatusBadge status={String(row[column.key])} />
+                          : (row[column.key] ?? "")}
                     </td>
                   ))}
                 </tr>
@@ -164,6 +201,28 @@ export function InteractiveTable({ columns, rows, emptyMessage, exportFileName }
             )}
           </tbody>
         </table>
+      </div>
+      <div className="mt-4 flex flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <p>Showing {showingStart}-{showingEnd} of {visibleRows.length} results</p>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="rounded-md border bg-white px-3 py-2 font-semibold text-foreground hover:bg-muted disabled:opacity-40"
+            disabled={currentPage === 1}
+            onClick={() => setPage((value) => Math.max(1, value - 1))}
+          >
+            Previous
+          </button>
+          <span className="px-2 font-semibold text-foreground">Page {currentPage} of {pageCount}</span>
+          <button
+            type="button"
+            className="rounded-md border bg-white px-3 py-2 font-semibold text-foreground hover:bg-muted disabled:opacity-40"
+            disabled={currentPage === pageCount}
+            onClick={() => setPage((value) => Math.min(pageCount, value + 1))}
+          >
+            Next
+          </button>
+        </div>
       </div>
     </div>
   )

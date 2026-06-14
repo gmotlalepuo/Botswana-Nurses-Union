@@ -75,6 +75,7 @@ async function updateProfileFromUploadForm(
     return { id: memberId }
   }
 
+  const locationColumn = await getCouncilColumn(admin)
   const { error } = await admin
     .from("members")
     .update({
@@ -92,7 +93,7 @@ async function updateProfileFromUploadForm(
       physical_address: String(formData.get("physicalAddress") ?? "") || null,
       postal_address: String(formData.get("postalAddress") ?? "") || null,
       district: String(formData.get("district") ?? "") || null,
-      region: String(formData.get("region") ?? "") || null,
+      [locationColumn]: String(formData.get("council") ?? "") || null,
       work_station: String(formData.get("workStation") ?? "") || null,
       department: String(formData.get("department") ?? "") || null,
       employment_date: String(formData.get("employmentDate") ?? "") || null,
@@ -123,6 +124,7 @@ async function createProfileFromUploadForm(
     return null
   }
 
+  const locationColumn = await getCouncilColumn(admin)
   const payload = {
     user_id: userId,
     full_name: fullName,
@@ -139,7 +141,7 @@ async function createProfileFromUploadForm(
     physical_address: String(formData.get("physicalAddress") ?? "") || null,
     postal_address: String(formData.get("postalAddress") ?? "") || null,
     district: String(formData.get("district") ?? "") || null,
-    region: String(formData.get("region") ?? "") || null,
+    [locationColumn]: String(formData.get("council") ?? "") || null,
     work_station: String(formData.get("workStation") ?? "") || null,
     department: String(formData.get("department") ?? "") || null,
     employment_date: String(formData.get("employmentDate") ?? "") || null,
@@ -156,4 +158,9 @@ async function createProfileFromUploadForm(
   }
 
   return data
+}
+
+async function getCouncilColumn(admin: ReturnType<typeof createAdminClient>) {
+  const { error } = await admin.from("members").select("council").limit(1)
+  return error ? "region" : "council"
 }

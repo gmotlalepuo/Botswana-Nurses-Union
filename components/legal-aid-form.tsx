@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { FormField, FormTextArea, HiddenApplicationFields } from "@/components/member-application-form"
+import { AiMimicButton } from "@/components/ai-mimic-button"
 
 const legalAidPlans = [
   {
@@ -123,8 +124,20 @@ export function LegalAidForm() {
         ) : null}
       </section>
 
-      <form action="/api/member/applications/create" method="post" className="grid gap-4 md:grid-cols-2">
+      <form id="legal-aid-application" action="/api/member/applications/create" method="post" className="grid gap-4 md:grid-cols-2">
         <HiddenApplicationFields applicationType="legal_aid" redirectTo="/portal/legal-aid" />
+        <AiMimicButton
+          formId="legal-aid-application"
+          values={{
+            legalAidPlan: "Standard",
+            beneficiaryName: "Thabo Molefe",
+            beneficiaryRelationship: "Spouse",
+            alternativeBeneficiaryName: "Naledi Molefe",
+            alternativeBeneficiaryRelationship: "Sister",
+            coveredDependents: "Kagiso Molefe - son\nBoitumelo Molefe - daughter",
+            supportingNotes: "Member works at Princess Marina Hospital in Gaborone. Preferred contact time is after 16:30 on weekdays.",
+          }}
+        />
         <label className="block">
           <span className="text-sm font-semibold">Legal aid plan</span>
           <select className="mt-2 w-full rounded-md border bg-white px-3 py-2 outline-none" name="legalAidPlan" onChange={(event) => setPlan(event.target.value)} required value={plan}>

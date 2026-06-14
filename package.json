@@ -9,6 +9,9 @@
     "start": "next start",
     "lint": "eslint .",
     "seed:admin": "node scripts/seed-admin.js",
+    "seed:members": "node scripts/seed-members.js",
+    "seed:bulk-payment-test": "node scripts/seed-bulk-payment-test.js",
+    "diagnose:membership": "node scripts/diagnose-membership-activation.js",
     "diagnose:attachments": "node scripts/diagnose-attachments.js"
   },
   "dependencies": {
@@ -68,6 +71,7 @@
     "stripe": "^22.1.1",
     "tailwind-merge": "^3.3.1",
     "vaul": "^1.1.2",
+    "xlsx": "^0.18.5",
     "zod": "^3.24.1"
   },
   "devDependencies": {

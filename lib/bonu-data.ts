@@ -84,7 +84,7 @@ export const services = [
 ]
 
 export const dashboardStats = [
-  { label: "Total members", value: "18,420", detail: "Across districts and regions", icon: ShieldCheck },
+  { label: "Total members", value: "18,420", detail: "Across districts and councils", icon: ShieldCheck },
   { label: "Open applications", value: "236", detail: "CSR review queue", icon: FileCheck2 },
   { label: "Monthly collections", value: "P 1.8M", detail: "Subscriptions and service deductions", icon: BadgeDollarSign },
   { label: "Campaign sites", value: "14", detail: "Facility activations in progress", icon: BriefcaseBusiness },

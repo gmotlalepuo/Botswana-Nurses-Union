@@ -83,7 +83,7 @@ export async function completeMerchandiseOrder(orderId: string, sessionId: strin
   await admin.from("notifications").insert({
     member_id: order.member_id,
     title: "Payment successful",
-    message: `Payment received for merchandise order ${order.order_number}. Your order is marked as paid.`,
+    message: `Payment received for merchandise order ${order.order_number}. Merchandise order status is paid.`,
     channel: "in_app",
   })
 }

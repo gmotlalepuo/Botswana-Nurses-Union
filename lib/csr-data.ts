@@ -19,7 +19,7 @@ export type CsrMember = {
   physical_address: string | null
   postal_address: string | null
   district: string | null
-  region: string | null
+  council: string | null
   work_station: string | null
   department: string | null
   employment_date: string | null
@@ -60,6 +60,11 @@ export type CsrPayment = {
   amount: number
   currency: string
   status: string
+  payment_kind: string | null
+  payment_month: string | null
+  payment_source: string | null
+  expected_amount: number | null
+  paid_at: string | null
   created_at: string
   members?: { full_name: string | null; email: string | null } | null
 }
@@ -68,6 +73,7 @@ export type CsrComplaint = {
   id: string
   subject: string
   category: string
+  description: string
   priority: string
   status: string
   resolution_notes: string | null
@@ -121,18 +127,21 @@ export async function getCsrPortalData(currentUserId?: string): Promise<CsrPorta
     const [members, documents, applications, payments, complaints, products, merchandiseOrders] = await Promise.all([
       supabase
         .from("members")
-        .select("id, membership_number, full_name, national_id, date_of_birth, gender, marital_status, occupation, email, mobile_number, alternative_contact_number, employer, employee_number, physical_address, postal_address, district, region, work_station, department, employment_date, monthly_salary, status, created_at, updated_at")
+        .select("*")
         .order("created_at", { ascending: false })
         .limit(500),
       supabase.from("member_documents").select("id, member_id, document_type, file_path, verified_at, created_at, members(full_name, email)").order("created_at", { ascending: false }).limit(500),
       supabase.from("service_applications").select("id, member_id, application_type, status, requested_amount, monthly_deduction, term_months, details, submitted_at, members(full_name, email)").order("submitted_at", { ascending: false }).limit(500),
-      supabase.from("payment_transactions").select("id, description, amount, currency, status, created_at, members(full_name, email)").order("created_at", { ascending: false }).limit(500),
-      supabase.from("complaints").select("id, subject, category, priority, status, resolution_notes, created_at, members(full_name, email)").order("created_at", { ascending: false }).limit(500),
+      supabase.from("payment_transactions").select("id, description, amount, currency, status, payment_kind, payment_month, payment_source, expected_amount, paid_at, created_at, members(full_name, email)").order("created_at", { ascending: false }).limit(500),
+      supabase.from("complaints").select("id, subject, category, description, priority, status, resolution_notes, created_at, members(full_name, email)").order("created_at", { ascending: false }).limit(500),
       supabase.from("merchandise_products").select("*").order("created_at", { ascending: false }).limit(500),
       supabase.from("merchandise_orders").select("id, order_number, status, payment_status, payment_option, delivery_method, delivery_address, collection_point, total_amount, amount_paid, balance_remaining, monthly_deduction, fulfilment_status, customer_signed_off_at, created_at, members(full_name, email)").order("created_at", { ascending: false }).limit(500),
     ])
 
-    const memberRows = (members.data ?? []) as CsrMember[]
+    const memberRows = (members.data ?? []).map((row) => ({
+      ...row,
+      council: row.council ?? row.region ?? null,
+    })) as CsrMember[]
     const documentRows = ((documents.data ?? []) as unknown[]).map(normalizeDocument)
     const applicationRows = ((applications.data ?? []) as unknown[]).map(normalizeApplication)
     attachApplicationDocuments(applicationRows, documentRows)

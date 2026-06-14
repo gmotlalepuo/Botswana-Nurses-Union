@@ -5,17 +5,19 @@ import { useEffect } from "react"
 export function FormSubmitLoading() {
   useEffect(() => {
     const setPending = (event: SubmitEvent) => {
-      if (event.defaultPrevented) {
-        return
-      }
-
       const form = event.target instanceof HTMLFormElement ? event.target : null
       const submitter = event.submitter instanceof HTMLButtonElement ? event.submitter : null
 
-      form?.setAttribute("aria-busy", "true")
-      form?.classList.add("form-submit-pending-form")
-      submitter?.setAttribute("aria-busy", "true")
-      submitter?.classList.add("form-submit-pending")
+      queueMicrotask(() => {
+        if (event.defaultPrevented || form?.dataset.clientSubmit === "true") {
+          return
+        }
+
+        form?.setAttribute("aria-busy", "true")
+        form?.classList.add("form-submit-pending-form")
+        submitter?.setAttribute("aria-busy", "true")
+        submitter?.classList.add("form-submit-pending")
+      })
     }
 
     const clearPending = () => {

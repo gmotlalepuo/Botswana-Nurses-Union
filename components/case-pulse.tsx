@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
+import * as Dialog from "@radix-ui/react-dialog"
 import { Download, Eye, Heart, MessageSquare, X } from "lucide-react"
 
 export type CasePulseItem = {
@@ -26,21 +27,6 @@ export function CasePulse({
 }) {
   const [open, setOpen] = useState(false)
 
-  useEffect(() => {
-    if (!open) {
-      return
-    }
-
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false)
-      }
-    }
-
-    document.addEventListener("keydown", closeOnEscape)
-    return () => document.removeEventListener("keydown", closeOnEscape)
-  }, [open])
-
   return (
     <>
       <button
@@ -51,17 +37,23 @@ export function CasePulse({
         <MessageSquare className="h-4 w-4" />
         {label} ({pulses.length})
       </button>
-      {open ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4" onClick={() => setOpen(false)}>
-          <div className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-lg bg-white shadow-xl" onClick={(event) => event.stopPropagation()}>
+      <Dialog.Root open={open} onOpenChange={setOpen}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-[200] bg-slate-950/60 backdrop-blur-sm" />
+          <Dialog.Content
+            className="fixed left-1/2 top-1/2 z-[201] max-h-[90dvh] w-[calc(100vw-1.5rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg bg-white shadow-2xl focus:outline-none"
+            aria-describedby="case-pulse-description"
+          >
             <div className="flex items-center justify-between gap-3 border-b p-4">
               <div>
-                <h2 className="text-xl font-bold">Case pulse</h2>
-                <p className="text-sm text-muted-foreground">Comments, likes, and supporting files for this application.</p>
+                <Dialog.Title className="text-xl font-bold">Case pulse</Dialog.Title>
+                <Dialog.Description id="case-pulse-description" className="text-sm text-muted-foreground">Comments, likes, and supporting files for this application.</Dialog.Description>
               </div>
-              <button aria-label="Close pulse" className="rounded-md p-2 hover:bg-muted" onClick={() => setOpen(false)} type="button">
-                <X className="h-5 w-5" />
-              </button>
+              <Dialog.Close asChild>
+                <button aria-label="Close pulse" className="flex h-11 w-11 items-center justify-center rounded-md border hover:bg-muted" type="button">
+                  <X className="h-5 w-5" />
+                </button>
+              </Dialog.Close>
             </div>
             <div className="max-h-[calc(90vh-5rem)] overflow-y-auto p-4">
               <div className="space-y-4">
@@ -124,9 +116,9 @@ export function CasePulse({
                 </form>
               </div>
             </div>
-          </div>
-        </div>
-      ) : null}
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </>
   )
 }

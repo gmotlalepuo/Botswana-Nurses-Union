@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import * as Dialog from "@radix-ui/react-dialog"
 import { Eye, FileText, Search, X } from "lucide-react"
 import { CasePulse } from "@/components/case-pulse"
 import { StatusBadge } from "@/components/status-badge"
@@ -126,17 +127,28 @@ export function CustomerApplicationDetailsModal({ application, onClose }: { appl
   const details = Object.entries(application.details ?? {}).filter(([key, value]) => !key.startsWith("__") && value !== null && value !== "")
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-sm sm:p-6" role="dialog" aria-modal="true" aria-labelledby="customer-application-title" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
-      <div className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-2xl border bg-slate-50 shadow-2xl">
+    <Dialog.Root open onOpenChange={(open) => { if (!open) onClose() }}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-[200] bg-slate-950/60 backdrop-blur-sm" />
+        <Dialog.Content
+          className="fixed left-1/2 top-1/2 z-[201] max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-4xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border bg-slate-50 shadow-2xl focus:outline-none"
+          aria-describedby="customer-application-description"
+        >
         <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b bg-white/95 px-5 py-5 backdrop-blur sm:px-7">
           <div className="flex items-center gap-3">
             <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary"><FileText className="h-5 w-5" /></span>
             <div>
-              <h3 id="customer-application-title" className="text-xl font-bold">{friendlyService(application.application_type)}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">Submitted {new Date(application.submitted_at).toLocaleDateString()}</p>
+              <Dialog.Title className="text-xl font-bold">{friendlyService(application.application_type)}</Dialog.Title>
+              <Dialog.Description id="customer-application-description" className="mt-1 text-sm text-muted-foreground">
+                Submitted {new Date(application.submitted_at).toLocaleDateString()}
+              </Dialog.Description>
             </div>
           </div>
-          <button className="rounded-full border bg-white p-2.5 text-muted-foreground hover:bg-muted" onClick={onClose} aria-label="Close details"><X className="h-4 w-4" /></button>
+          <Dialog.Close asChild>
+            <button className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border bg-white text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Close details" type="button">
+              <X className="h-5 w-5" />
+            </button>
+          </Dialog.Close>
         </header>
 
         <div className="space-y-5 p-5 sm:p-7">
@@ -163,10 +175,13 @@ export function CustomerApplicationDetailsModal({ application, onClose }: { appl
         </div>
 
         <footer className="sticky bottom-0 flex justify-end border-t bg-white/95 px-5 py-4 backdrop-blur sm:px-7">
-          <button className="rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground" onClick={onClose}>Close details</button>
+          <Dialog.Close asChild>
+            <button className="rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground" type="button">Close details</button>
+          </Dialog.Close>
         </footer>
-      </div>
-    </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }
 
@@ -192,6 +207,7 @@ function getPortalRedirect(applicationType: string) {
     loan_assistance: "/portal/external-loans",
     merchandise: "/portal/merchandise",
     micro_loan: "/portal/micro-lending",
+    bundle: "/portal/bundles",
   }
   return redirects[applicationType] ?? "/portal"
 }
