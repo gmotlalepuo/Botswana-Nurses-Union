@@ -24,12 +24,27 @@ export async function POST(request: Request) {
     }
 
     const admin = createAdminClient()
+    const { data: existingApplication, error: applicationLookupError } = await admin
+      .from("service_applications")
+      .select("application_type")
+      .eq("id", applicationId)
+      .maybeSingle()
+
+    if (applicationLookupError || !existingApplication) {
+      return NextResponse.redirect(new URL(`${redirectTo}?error=application-update`, request.url), 303)
+    }
+
+    const approvedMonthlyDeduction = existingApplication.application_type === "membership"
+      ? null
+      : Number.isFinite(monthlyDeduction)
+        ? monthlyDeduction
+        : null
     const { data, error } = await admin
       .from("service_applications")
       .update({
         status,
         assigned_to: user?.id,
-        monthly_deduction: Number.isFinite(monthlyDeduction) ? monthlyDeduction : null,
+        monthly_deduction: approvedMonthlyDeduction,
         term_months: Number.isFinite(termMonths) && termMonths > 0 ? termMonths : null,
         decided_at: ["approved", "rejected", "fulfilled"].includes(status) ? new Date().toISOString() : null,
         updated_at: new Date().toISOString(),

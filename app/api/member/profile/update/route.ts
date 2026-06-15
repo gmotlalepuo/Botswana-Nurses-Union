@@ -35,14 +35,14 @@ export async function POST(request: Request) {
     }
     const council = String(formData.get("council") ?? "") || null
 
-    if (!profileFields.full_name || !profileFields.mobile_number || !profileFields.email) {
+    if (!isCompleteProfilePayload(profileFields, council)) {
       return NextResponse.redirect(new URL("/portal/profile?error=missing", request.url), 303)
     }
 
     const admin = createAdminClient()
     const locationColumn = await getCouncilColumn(admin)
     const payload = { ...profileFields, [locationColumn]: council }
-    const { data: existing } = await admin.from("members").select("id").eq("user_id", user?.id).maybeSingle()
+    const { data: existing } = await admin.from("members").select("id, status").eq("user_id", user?.id).maybeSingle()
     const memberResult = existing
       ? await admin.from("members").update(payload).eq("id", existing.id).select("id").single()
       : await admin.from("members").insert({
@@ -67,11 +67,52 @@ export async function POST(request: Request) {
       return NextResponse.redirect(new URL("/portal/profile?error=document-record", request.url), 303)
     }
 
-    return NextResponse.redirect(new URL(`/portal/profile?success=profile-updated&attachments=${attachmentResult.count}`, request.url), 303)
+    const destination = existing?.status === "active" ? "/portal/profile" : "/portal/membership"
+    return NextResponse.redirect(new URL(`${destination}?success=profile-updated&attachments=${attachmentResult.count}`, request.url), 303)
   } catch (error) {
     console.error("Member profile submit failed", error)
     return NextResponse.redirect(new URL("/portal/profile?error=not-configured", request.url), 303)
   }
+}
+
+function isCompleteProfilePayload(
+  profile: {
+    full_name: string
+    national_id: string | null
+    date_of_birth: string | null
+    gender: string | null
+    occupation: string | null
+    employer: string | null
+    employee_number: string | null
+    mobile_number: string
+    email: string
+    physical_address: string | null
+    district: string | null
+    work_station: string | null
+    department: string | null
+    employment_date: string | null
+    monthly_salary: number | null
+  },
+  council: string | null,
+) {
+  return Boolean(
+    profile.full_name &&
+    profile.national_id &&
+    profile.date_of_birth &&
+    profile.gender &&
+    profile.occupation &&
+    profile.employer &&
+    profile.employee_number &&
+    profile.mobile_number &&
+    profile.email &&
+    profile.physical_address &&
+    profile.district &&
+    council &&
+    profile.work_station &&
+    profile.department &&
+    profile.employment_date &&
+    Number(profile.monthly_salary ?? 0) > 0
+  )
 }
 
 async function getCouncilColumn(admin: ReturnType<typeof createAdminClient>) {

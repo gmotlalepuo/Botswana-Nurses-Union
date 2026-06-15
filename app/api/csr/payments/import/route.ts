@@ -4,7 +4,8 @@ import { requireStaffRequest } from "@/lib/admin-auth"
 import {
   completeMonthlyPayment,
   findMonthlyPayment,
-  getApprovedMonthlyCharges,
+  getMembershipMonthlyCharge,
+  hasApprovedMembershipOnboarding,
   normalizePaymentMonth,
 } from "@/lib/membership-payments"
 import { createAdminClient } from "@/lib/supabase/admin"
@@ -132,7 +133,23 @@ export async function POST(request: Request) {
         continue
       }
 
-      const charges = await getApprovedMonthlyCharges(admin, member.id)
+      if (!["active", "suspended"].includes(member.status)) {
+        const onboardingApproved = await hasApprovedMembershipOnboarding(admin, member.id)
+        if (!onboardingApproved) {
+          results.push({
+            row: rowNumber,
+            name: normalized.name || member.full_name,
+            nationalId: normalized.nationalId,
+            paymentMonth,
+            amount,
+            status: "invalid",
+            message: "CSR must approve the membership onboarding application before payment can activate this member.",
+          })
+          continue
+        }
+      }
+
+      const charges = await getMembershipMonthlyCharge(admin, member.id)
       if (charges.total <= 0) {
         results.push({
           row: rowNumber,
@@ -141,7 +158,20 @@ export async function POST(request: Request) {
           paymentMonth,
           amount,
           status: "invalid",
-          message: "The matched member has no approved monthly service deductions.",
+          message: "The matched member does not have a valid monthly salary for the 5% membership fee.",
+        })
+        continue
+      }
+
+      if (Math.abs(amount - charges.total) > 0.009) {
+        results.push({
+          row: rowNumber,
+          name: normalized.name || member.full_name,
+          nationalId: normalized.nationalId,
+          paymentMonth,
+          amount,
+          status: "invalid",
+          message: `Payment must equal the 5% membership fee of P ${charges.total.toFixed(2)}.`,
         })
         continue
       }

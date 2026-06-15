@@ -71,19 +71,26 @@ npm run seed:members
 
 Apply `lib/db/migrations/011-monthly-membership-payments.sql` in the Supabase SQL editor. This migration:
 
-- creates one combined membership payment per member and payment month
+- creates one membership payment per member and payment month
 - prevents duplicate Stripe and CSR-import payments for the same month
-- stores service-level deduction breakdowns in payment metadata
+- stores payment breakdowns in payment metadata
 - creates CSR payment-import audit records
 - schedules suspension after the five-day grace period using `pg_cron`
+
+Then apply `lib/db/migrations/016-salary-based-membership-fee.sql`. This updates
+the suspension rule for the current business logic: the monthly BONU membership
+fee is 5% of the member's saved monthly salary and does not depend on approved
+service applications.
 
 The CSR payment template is available from `/csr/payments`. Supported upload formats are CSV, XLS, and XLSX with these columns:
 
 ```text
-Name, National ID / Omang, Council, Email, Phone, Payment Month, Total Deductions
+Name, National ID / Omang, Council, Email, Phone, Payment Month, Monthly Salary, Total Deductions
 ```
 
-Use `YYYY-MM` for Payment Month. National ID / Omang is the matching key; other profile differences are accepted and reported as warnings.
+Use `YYYY-MM` for Payment Month. National ID / Omang is the matching key. The
+uploaded amount must equal 5% of the saved monthly salary; other profile
+differences are accepted and reported as warnings.
 
 ## Forgot Password
 

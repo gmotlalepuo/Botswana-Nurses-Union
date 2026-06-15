@@ -3,6 +3,8 @@ import { randomUUID } from "node:crypto"
 import { checkoutItems } from "@/lib/bonu-data"
 import { completeMerchandiseOrder } from "@/lib/merchandise-orders"
 import { discountedPrice, seededMerchandiseProducts } from "@/lib/merchandise-data"
+import { requireMemberRequest } from "@/lib/member-auth"
+import { isMemberProfileComplete, type MemberProfile } from "@/lib/member-data"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { stripe } from "@/lib/stripe"
 
@@ -14,7 +16,9 @@ export async function POST(request: Request) {
   const origin = request.headers.get("origin") ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
 
   if (body.checkoutType === "merchandise") {
-    return createMerchandiseCheckout(body, origin, contentType)
+    const { user, response } = await requireMemberRequest(request)
+    if (response || !user) return response
+    return createMerchandiseCheckout(body, origin, contentType, user.id)
   }
 
   const { itemId = "membership", memberId = "guest" } = body
@@ -73,7 +77,7 @@ type CartItem = {
   color?: string
 }
 
-async function createMerchandiseCheckout(body: Record<string, unknown>, origin: string, contentType: string) {
+async function createMerchandiseCheckout(body: Record<string, unknown>, origin: string, contentType: string, userId: string) {
   const memberId = String(body.memberId ?? "")
   const deliveryMethod = String(body.deliveryMethod ?? "delivery")
   const paymentOption = String(body.paymentOption ?? "stripe")
@@ -87,6 +91,29 @@ async function createMerchandiseCheckout(body: Record<string, unknown>, origin: 
   }
 
   const admin = createAdminClient()
+  const { data: member } = await admin
+    .from("members")
+    .select("*")
+    .eq("id", memberId)
+    .eq("user_id", userId)
+    .maybeSingle()
+
+  if (!member) {
+    return NextResponse.redirect(`${origin}/portal/profile?error=profile-required`, 303)
+  }
+
+  const accessProfile = {
+    ...member,
+    council: member.council ?? member.region ?? null,
+  } as MemberProfile
+  if (!isMemberProfileComplete(accessProfile)) {
+    return NextResponse.redirect(`${origin}/portal/profile?error=profile-required`, 303)
+  }
+
+  if (member.status !== "active") {
+    return NextResponse.redirect(`${origin}/portal/membership?error=membership-active-required`, 303)
+  }
+
   const productIds = Array.from(new Set(cart.map((item) => item.productId)))
   const { data: products, error } = await admin
     .from("merchandise_products")

@@ -22,6 +22,34 @@ export async function POST(request: Request) {
     }
 
     const admin = createAdminClient()
+    if (status === "active") {
+      const { data: approvedOnboarding } = await admin
+        .from("service_applications")
+        .select("id")
+        .eq("member_id", memberId)
+        .eq("application_type", "membership")
+        .in("status", ["approved", "fulfilled"])
+        .limit(1)
+        .maybeSingle()
+
+      if (!approvedOnboarding) {
+        return NextResponse.redirect(new URL(`${redirectTo}?error=membership-onboarding-approval-required`, request.url), 303)
+      }
+
+      const { data: paidMembership } = await admin
+        .from("payment_transactions")
+        .select("id")
+        .eq("member_id", memberId)
+        .eq("payment_kind", "membership_monthly")
+        .eq("status", "paid")
+        .limit(1)
+        .maybeSingle()
+
+      if (!paidMembership) {
+        return NextResponse.redirect(new URL(`${redirectTo}?error=membership-payment-required`, request.url), 303)
+      }
+    }
+
     const { data, error } = await admin.from("members").update({ status, updated_at: new Date().toISOString() }).eq("id", memberId).select("full_name").single()
 
     if (error) {

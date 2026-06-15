@@ -1,11 +1,11 @@
 import { ApplicationHistory, FormAttachment, FormField, FormTextArea, HiddenApplicationFields } from "@/components/member-application-form"
 import { MemberPortalShell } from "@/components/member-portal-shell"
 import { getMemberPortalData } from "@/lib/member-data"
-import { requireMemberPage } from "@/lib/member-auth"
+import { requireActiveMemberPage } from "@/lib/member-auth"
 import { AiMimicButton } from "@/components/ai-mimic-button"
 
 export default async function MicroLendingPage() {
-  const user = await requireMemberPage()
+  const { user } = await requireActiveMemberPage()
   const data = await getMemberPortalData(user.id)
   const applications = data.applications.filter((item) => item.application_type === "micro_loan")
 

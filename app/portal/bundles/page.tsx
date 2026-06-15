@@ -4,10 +4,10 @@ import { BundleRequestForm } from "@/components/bundle-request-form"
 import { CustomerApplicationTable } from "@/components/customer-application-table"
 import { MemberPortalShell } from "@/components/member-portal-shell"
 import { formatCurrency, getMemberPortalData, type MemberApplication } from "@/lib/member-data"
-import { requireMemberPage } from "@/lib/member-auth"
+import { requireActiveMemberPage } from "@/lib/member-auth"
 
 export default async function BundlesPage() {
-  const user = await requireMemberPage()
+  const { user } = await requireActiveMemberPage()
   const data = await getMemberPortalData(user.id)
   const applications = data.applications.filter((application) => application.application_type === "bundle")
   const applicationsById = new Map(applications.map((application) => [application.id, application]))

@@ -85,33 +85,33 @@ export function MemberProfileForm({
       </div>
 
       <section className={step === 3 ? "hidden" : "rounded-lg border bg-white p-5 shadow-sm"}>
-        <form id="member-profile-form" action="/api/member/profile/update" method="post" encType="multipart/form-data" className="space-y-5">
+        <form id="member-profile-form" action="/api/member/profile/update" method="post" encType="multipart/form-data" className="space-y-5" noValidate>
           <div className={step === 0 ? "grid gap-4 md:grid-cols-2" : "hidden"}>
-            <Field name="fullName" label="Full Name" value={formData.fullName} onChange={updateField} />
-            <Field name="nationalId" label="National ID / Passport Number" value={formData.nationalId} onChange={updateField} />
-            <Field name="dateOfBirth" label="Date of Birth" type="date" value={formData.dateOfBirth} onChange={updateField} />
-            <Select name="gender" label="Gender" value={formData.gender} onChange={updateField} options={["Female", "Male", "Other"]} />
+            <Field name="fullName" label="Full Name" value={formData.fullName} onChange={updateField} required />
+            <Field name="nationalId" label="National ID / Passport Number" value={formData.nationalId} onChange={updateField} required />
+            <Field name="dateOfBirth" label="Date of Birth" type="date" value={formData.dateOfBirth} onChange={updateField} required />
+            <Select name="gender" label="Gender" value={formData.gender} onChange={updateField} options={["Female", "Male", "Other"]} required />
             <Select name="maritalStatus" label="Marital Status" value={formData.maritalStatus} onChange={updateField} options={["Single", "Married", "Divorced", "Widowed"]} />
-            <Field name="occupation" label="Occupation" value={formData.occupation} onChange={updateField} />
+            <Field name="occupation" label="Occupation" value={formData.occupation} onChange={updateField} required />
           </div>
 
           <div className={step === 1 ? "grid gap-4 md:grid-cols-2" : "hidden"}>
-            <Field name="mobileNumber" label="Mobile Number" value={formData.mobileNumber} onChange={updateField} />
+            <Field name="mobileNumber" label="Mobile Number" value={formData.mobileNumber} onChange={updateField} required />
             <Field name="alternativeContactNumber" label="Alternative Contact Number" value={formData.alternativeContactNumber} onChange={updateField} />
-            <Field name="email" label="Email Address" type="email" value={formData.email} onChange={updateField} />
-            <Field name="physicalAddress" label="Physical Address" value={formData.physicalAddress} onChange={updateField} />
+            <Field name="email" label="Email Address" type="email" value={formData.email} onChange={updateField} required />
+            <Field name="physicalAddress" label="Physical Address" value={formData.physicalAddress} onChange={updateField} required />
             <Field name="postalAddress" label="Postal Address" value={formData.postalAddress} onChange={updateField} />
-            <Select name="district" label="District" value={formData.district} onChange={updateField} options={[...BOTSWANA_DISTRICTS]} />
-            <Select name="council" label="Council" value={formData.council} onChange={updateField} options={[...BOTSWANA_COUNCILS]} />
+            <Select name="district" label="District" value={formData.district} onChange={updateField} options={[...BOTSWANA_DISTRICTS]} required />
+            <Select name="council" label="Council" value={formData.council} onChange={updateField} options={[...BOTSWANA_COUNCILS]} required />
           </div>
 
           <div className={step === 2 ? "grid gap-4 md:grid-cols-2" : "hidden"}>
-            <Field name="employer" label="Employer" value={formData.employer} onChange={updateField} />
-            <Field name="employeeNumber" label="Employee Number" value={formData.employeeNumber} onChange={updateField} />
-            <Field name="workStation" label="Work Station" value={formData.workStation} onChange={updateField} />
-            <Field name="department" label="Department" value={formData.department} onChange={updateField} />
-            <Field name="employmentDate" label="Employment Date" type="date" value={formData.employmentDate} onChange={updateField} />
-            <Field name="monthlySalary" label="Salary Information" type="number" value={formData.monthlySalary} onChange={updateField} />
+            <Field name="employer" label="Employer" value={formData.employer} onChange={updateField} required />
+            <Field name="employeeNumber" label="Employee Number" value={formData.employeeNumber} onChange={updateField} required />
+            <Field name="workStation" label="Work Station" value={formData.workStation} onChange={updateField} required />
+            <Field name="department" label="Department" value={formData.department} onChange={updateField} required />
+            <Field name="employmentDate" label="Employment Date" type="date" value={formData.employmentDate} onChange={updateField} required />
+            <Field name="monthlySalary" label="Monthly Salary (BWP)" type="number" value={formData.monthlySalary} onChange={updateField} required />
           </div>
         </form>
       </section>
@@ -408,20 +408,23 @@ function Field({
   value,
   onChange,
   type = "text",
+  required = false,
 }: {
   name: string
   label: string
   value: string
   onChange: (name: never, value: string) => void
   type?: string
+  required?: boolean
 }) {
   return (
     <label className="block">
-      <span className="text-sm font-semibold">{label}</span>
+      <span className="text-sm font-semibold">{label}{required && <span className="text-destructive"> *</span>}</span>
       <input
         className="mt-2 w-full rounded-md border px-3 py-2 outline-none"
         name={name}
         type={type}
+        required={required}
         value={value}
         onChange={(event) => onChange(name as never, event.target.value)}
       />
@@ -435,20 +438,23 @@ function Select({
   value,
   onChange,
   options,
+  required = false,
 }: {
   name: string
   label: string
   value: string
   onChange: (name: never, value: string) => void
   options: string[]
+  required?: boolean
 }) {
   return (
     <label className="block">
-      <span className="text-sm font-semibold">{label}</span>
+      <span className="text-sm font-semibold">{label}{required && <span className="text-destructive"> *</span>}</span>
       <select
         className="mt-2 w-full rounded-md border bg-white px-3 py-2 outline-none"
         name={name}
         value={value}
+        required={required}
         onChange={(event) => onChange(name as never, event.target.value)}
       >
         <option value="">Select</option>

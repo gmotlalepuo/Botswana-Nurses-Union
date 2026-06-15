@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { randomUUID } from "node:crypto"
 import { requireMemberRequest } from "@/lib/member-auth"
 import { BUNDLE_PROVIDERS, BUNDLE_TERMS, BUNDLE_TYPES, isBotswanaMobile } from "@/lib/bundle-service"
+import { isMemberProfileComplete, type MemberProfile } from "@/lib/member-data"
 import { createAdminClient } from "@/lib/supabase/admin"
 
 const applicationTypes = new Set([
@@ -35,10 +36,50 @@ export async function POST(request: Request) {
       return NextResponse.redirect(new URL(`${redirectTo}?error=bundle-invalid`, request.url), 303)
     }
 
-    const { data: member } = await supabase.from("members").select("id").eq("user_id", user?.id).maybeSingle()
+    if (applicationType === "membership") {
+      const membershipError = validateMembershipRequest(formData)
+      if (membershipError) {
+        return NextResponse.redirect(new URL(`${redirectTo}?error=${membershipError}`, request.url), 303)
+      }
+    }
+
+    if (applicationType === "funeral_insurance") {
+      const funeralError = validateFuneralRequest(formData)
+      if (funeralError) {
+        return NextResponse.redirect(new URL(`${redirectTo}?error=${funeralError}`, request.url), 303)
+      }
+    }
+
+    const { data: rawMember } = await supabase.from("members").select("*").eq("user_id", user?.id).maybeSingle()
+    const member = rawMember
+      ? { ...rawMember, council: rawMember.council ?? rawMember.region ?? null } as MemberProfile
+      : null
 
     if (!member) {
       return NextResponse.redirect(new URL("/portal/profile?error=profile-required", request.url), 303)
+    }
+
+    if (!isMemberProfileComplete(member)) {
+      return NextResponse.redirect(new URL("/portal/profile?error=profile-required", request.url), 303)
+    }
+
+    if (applicationType !== "membership" && member.status !== "active") {
+      return NextResponse.redirect(new URL(`${redirectTo}?error=membership-active-required`, request.url), 303)
+    }
+
+    if (applicationType === "membership") {
+      const { data: openMembershipApplication } = await supabase
+        .from("service_applications")
+        .select("id")
+        .eq("member_id", member.id)
+        .eq("application_type", "membership")
+        .in("status", ["submitted", "in_review", "more_info_required"])
+        .limit(1)
+        .maybeSingle()
+
+      if (openMembershipApplication) {
+        return NextResponse.redirect(new URL(`${redirectTo}?error=membership-submission-open`, request.url), 303)
+      }
     }
 
     const details = Object.fromEntries(
@@ -91,6 +132,58 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.redirect(new URL("/portal?error=not-configured", request.url), 303)
   }
+}
+
+function validateMembershipRequest(formData: FormData) {
+  const citizenship = String(formData.get("citizenship") ?? "")
+  const employmentSector = String(formData.get("employmentSector") ?? "")
+  if (!["citizen", "non_citizen"].includes(citizenship) || !["public", "private"].includes(employmentSector)) {
+    return "membership-classification"
+  }
+  if (formData.get("informationConsent") !== "accepted") {
+    return "membership-consent"
+  }
+
+  const requiredDocuments = employmentSector === "public"
+    ? ["Deduction Form"]
+    : ["Direct Debit Form"]
+
+  for (const documentName of requiredDocuments) {
+    const file = formData.get(`attachment::${documentName}`)
+    if (!(file instanceof File) || file.size === 0) return "membership-documents"
+  }
+
+  const uploads = Array.from(formData.entries())
+    .filter(([key, value]) => key.startsWith("attachment::") && value instanceof File && value.size > 0)
+    .map(([, value]) => value as File)
+  const acceptedTypes = new Set(["application/pdf", "image/jpeg", "image/png"])
+  if (uploads.some((file) => file.size > 10 * 1024 * 1024 || !acceptedTypes.has(file.type))) {
+    return "membership-file-invalid"
+  }
+
+  return null
+}
+
+function validateFuneralRequest(formData: FormData) {
+  const funeralPolicy = formData.get("attachment::Funeral Policy Form")
+  if (!(funeralPolicy instanceof File) || funeralPolicy.size === 0) {
+    return "funeral-documents"
+  }
+
+  if (formData.get("addDependants") === "accepted") {
+    const additionalMembers = formData.get("attachment::Additional Member Funeral Form")
+    if (!(additionalMembers instanceof File) || additionalMembers.size === 0) {
+      return "funeral-additional-document"
+    }
+  }
+
+  const uploads = Array.from(formData.entries())
+    .filter(([key, value]) => key.startsWith("attachment::") && value instanceof File && value.size > 0)
+    .map(([, value]) => value as File)
+  const acceptedTypes = new Set(["application/pdf", "image/jpeg", "image/png"])
+  return uploads.some((file) => file.size > 10 * 1024 * 1024 || !acceptedTypes.has(file.type))
+    ? "membership-file-invalid"
+    : null
 }
 
 function isValidBundleRequest(formData: FormData) {

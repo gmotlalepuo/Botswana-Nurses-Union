@@ -3,10 +3,10 @@ import { MerchandiseShop } from "@/components/merchandise-shop"
 import { MemberPortalShell } from "@/components/member-portal-shell"
 import { getMerchandiseProducts } from "@/lib/merchandise-data"
 import { getMemberPortalData } from "@/lib/member-data"
-import { requireMemberPage } from "@/lib/member-auth"
+import { requireActiveMemberPage } from "@/lib/member-auth"
 
 export default async function MerchandisePage() {
-  const user = await requireMemberPage()
+  const { user } = await requireActiveMemberPage()
   const data = await getMemberPortalData(user.id)
   const products = await getMerchandiseProducts()
 

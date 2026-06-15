@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
+import { isMemberProfileComplete, type MemberProfile } from "@/lib/member-data"
 
 export async function requireMemberPage() {
   const supabase = await createClient()
@@ -41,4 +43,31 @@ export async function requireMemberRequest(request: Request) {
   }
 
   return { supabase, user, response: null }
+}
+
+export async function requireCompleteMemberPage() {
+  const user = await requireMemberPage()
+  const profile = await getMemberAccessProfile(user.id)
+  if (!isMemberProfileComplete(profile)) {
+    redirect("/portal/profile?error=profile-required")
+  }
+  return { user, profile }
+}
+
+export async function requireActiveMemberPage() {
+  const { user, profile } = await requireCompleteMemberPage()
+  if (profile?.status !== "active") {
+    redirect("/portal/membership?error=membership-active-required")
+  }
+  return { user, profile }
+}
+
+export async function getMemberAccessProfile(userId: string): Promise<MemberProfile | null> {
+  const admin = createAdminClient()
+  const { data } = await admin.from("members").select("*").eq("user_id", userId).maybeSingle()
+  if (!data) return null
+  return {
+    ...data,
+    council: data.council ?? data.region ?? null,
+  } as MemberProfile
 }

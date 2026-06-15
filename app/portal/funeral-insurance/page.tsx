@@ -2,10 +2,10 @@ import { ApplicationHistory } from "@/components/member-application-form"
 import { FuneralCoverForm } from "@/components/funeral-cover-form"
 import { MemberPortalShell } from "@/components/member-portal-shell"
 import { getMemberPortalData } from "@/lib/member-data"
-import { requireMemberPage } from "@/lib/member-auth"
+import { requireActiveMemberPage } from "@/lib/member-auth"
 
 export default async function FuneralInsurancePage() {
-  const user = await requireMemberPage()
+  const { user } = await requireActiveMemberPage()
   const data = await getMemberPortalData(user.id)
   const applications = data.applications.filter((item) => item.application_type === "funeral_insurance")
 

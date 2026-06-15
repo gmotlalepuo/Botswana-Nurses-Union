@@ -104,7 +104,7 @@ export function BundleRequestForm() {
       <div className="space-y-3 rounded-lg border bg-muted/30 p-4 md:col-span-2">
         <label className="flex items-start gap-3 text-sm leading-6">
           <input className="mt-1 h-4 w-4" name="deductionConsent" required type="checkbox" value="accepted" />
-          <span>I authorize BONU to include the CSR-approved bundle amount in my combined monthly membership deduction.</span>
+          <span>I authorize BONU to add the CSR-approved bundle amount to my monthly deductions.</span>
         </label>
         <label className="flex items-start gap-3 text-sm leading-6">
           <input className="mt-1 h-4 w-4" name="informationConsent" required type="checkbox" value="accepted" />

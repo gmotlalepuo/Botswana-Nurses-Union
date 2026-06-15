@@ -3,12 +3,12 @@ import { AiMimicButton } from "@/components/ai-mimic-button"
 import { MemberComplaintHistory } from "@/components/member-complaint-history"
 import { MemberPortalShell } from "@/components/member-portal-shell"
 import { getMemberPortalData } from "@/lib/member-data"
-import { requireMemberPage } from "@/lib/member-auth"
+import { requireCompleteMemberPage } from "@/lib/member-auth"
 
 const categories = ["Membership", "Payments", "Funeral Insurance", "Legal Aid", "External Loans", "Micro-Lending", "Shop", "Electronic Contracts", "Bundles", "Profile", "Other"]
 
 export default async function MemberComplaintsPage() {
-  const user = await requireMemberPage()
+  const { user } = await requireCompleteMemberPage()
   const data = await getMemberPortalData(user.id)
 
   return (

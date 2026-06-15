@@ -4,17 +4,23 @@ import { LogOut } from "lucide-react"
 import { MemberLoadingIndicator } from "@/components/member-loading-indicator"
 import { MemberTopMenu } from "@/components/member-top-menu"
 import { NotificationsMenu } from "@/components/notifications-menu"
-import type { MemberProfile } from "@/lib/member-data"
+import { ProfileCompletionGate } from "@/components/profile-completion-gate"
+import { isMemberProfileComplete, type MemberProfile } from "@/lib/member-data"
 import { getMemberNotifications } from "@/lib/member-notifications"
 
 export async function MemberPortalShell({
   profile,
+  profileComplete,
+  showProfileGate = false,
   children,
 }: {
   profile: MemberProfile | null
+  profileComplete?: boolean
+  showProfileGate?: boolean
   children: React.ReactNode
 }) {
   const isActive = profile?.status === "active"
+  const complete = profileComplete ?? isMemberProfileComplete(profile)
   const notifications = await getMemberNotifications(profile?.id ?? "")
 
   return (
@@ -43,11 +49,12 @@ export async function MemberPortalShell({
             </form>
           </div>
         </div>
-        <MemberTopMenu />
+        <MemberTopMenu isActive={isActive} profileComplete={complete} />
       </header>
       <section className="bonu-content mx-auto max-w-7xl px-5 py-7">
         <div className="min-w-0">{children}</div>
       </section>
+      <ProfileCompletionGate open={showProfileGate && !complete} />
     </main>
   )
 }

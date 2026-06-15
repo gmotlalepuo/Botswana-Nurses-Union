@@ -1,18 +1,9 @@
-import { BadgeDollarSign, Boxes, ClipboardCheck, FileCheck2, Megaphone, MessageSquareWarning, ShoppingBag, TrendingUp, UsersRound } from "lucide-react"
+import { BadgeDollarSign, ClipboardCheck, FileCheck2, Megaphone, TrendingUp, UsersRound } from "lucide-react"
 import { CsrHeader } from "@/components/csr-header"
 import { requireCsrPage } from "@/lib/admin-auth"
 import { getCsrPortalData } from "@/lib/csr-data"
 
 const metricIcons = [UsersRound, FileCheck2, ClipboardCheck, Megaphone]
-const actionLinks = [
-  { href: "/csr/members", label: "Members", icon: UsersRound },
-  { href: "/csr/documents", label: "Documents", icon: FileCheck2 },
-  { href: "/csr/applications", label: "Applications", icon: ClipboardCheck },
-  { href: "/csr/products", label: "Products", icon: Boxes },
-  { href: "/csr/orders", label: "Orders", icon: ShoppingBag },
-  { href: "/csr/complaints", label: "Complaints", icon: MessageSquareWarning },
-]
-
 export default async function CsrPortalPage() {
   const user = await requireCsrPage()
   const data = await getCsrPortalData(user.id)
@@ -57,26 +48,6 @@ export default async function CsrPortalPage() {
             )
           })}
         </div>
-
-        <section className="mt-6 rounded-lg border bg-white p-5 shadow-sm">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <h2 className="text-xl font-bold">CSR action center</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Jump directly to the processing area you need.</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {actionLinks.map((link) => {
-                const Icon = link.icon
-                return (
-                  <a key={link.href} className="inline-flex items-center gap-2 rounded-md border bg-white px-3 py-2 text-sm font-semibold hover:bg-muted" href={link.href}>
-                    <Icon className="h-4 w-4 text-primary" />
-                    {link.label}
-                  </a>
-                )
-              })}
-            </div>
-          </div>
-        </section>
 
         <section className="mt-6 grid gap-4 xl:grid-cols-[1.35fr_1fr]">
           <div className="rounded-lg border bg-white p-5 shadow-sm">

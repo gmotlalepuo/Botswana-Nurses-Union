@@ -2,17 +2,28 @@
 
 import { useMemo, useState } from "react"
 import * as Dialog from "@radix-ui/react-dialog"
-import { Eye, FileText, Search, X } from "lucide-react"
+import { ArrowDown, ArrowUp, ArrowUpDown, Download, Eye, FileText, Paperclip, Search, X } from "lucide-react"
 import { CasePulse } from "@/components/case-pulse"
 import { StatusBadge } from "@/components/status-badge"
 import type { MemberApplication } from "@/lib/member-data"
 import { formatCurrency, friendlyService } from "@/lib/member-data"
 
-export function CustomerApplicationTable({ title, applications }: { title: string; applications: MemberApplication[] }) {
+type SortColumn = "service" | "status" | "deduction" | "submitted"
+
+export function CustomerApplicationTable({
+  title,
+  applications,
+  dashboardMode = false,
+}: {
+  title: string
+  applications: MemberApplication[]
+  dashboardMode?: boolean
+}) {
   const [query, setQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [serviceFilter, setServiceFilter] = useState("all")
-  const [sortBy, setSortBy] = useState("newest")
+  const [sortColumn, setSortColumn] = useState<SortColumn>("submitted")
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [selectedApplication, setSelectedApplication] = useState<MemberApplication | null>(null)
@@ -28,13 +39,42 @@ export function CustomerApplicationTable({ title, applications }: { title: strin
           (serviceFilter === "all" || application.application_type === serviceFilter)
       })
       .sort((left, right) => {
-        if (sortBy === "oldest") return new Date(left.submitted_at).getTime() - new Date(right.submitted_at).getTime()
-        if (sortBy === "service") return friendlyService(left.application_type).localeCompare(friendlyService(right.application_type))
-        if (sortBy === "status") return left.status.localeCompare(right.status)
-        if (sortBy === "deduction") return Number(right.monthly_deduction ?? 0) - Number(left.monthly_deduction ?? 0)
-        return new Date(right.submitted_at).getTime() - new Date(left.submitted_at).getTime()
+        const direction = sortDirection === "asc" ? 1 : -1
+        if (sortColumn === "service") return friendlyService(left.application_type).localeCompare(friendlyService(right.application_type)) * direction
+        if (sortColumn === "status") return left.status.localeCompare(right.status) * direction
+        if (sortColumn === "deduction") return (Number(left.monthly_deduction ?? 0) - Number(right.monthly_deduction ?? 0)) * direction
+        return (new Date(left.submitted_at).getTime() - new Date(right.submitted_at).getTime()) * direction
       })
-  }, [applications, query, serviceFilter, sortBy, statusFilter])
+  }, [applications, query, serviceFilter, sortColumn, sortDirection, statusFilter])
+
+  function changeSort(column: SortColumn) {
+    setPage(1)
+    if (sortColumn === column) {
+      setSortDirection((direction) => direction === "asc" ? "desc" : "asc")
+      return
+    }
+    setSortColumn(column)
+    setSortDirection(column === "submitted" || column === "deduction" ? "desc" : "asc")
+  }
+
+  function exportApplications() {
+    const header = ["Service", "Status", "Monthly deduction", "Submitted"]
+    const data = rows.map((application) => [
+      friendlyService(application.application_type),
+      application.status,
+      application.monthly_deduction ? Number(application.monthly_deduction) : "",
+      new Date(application.submitted_at).toLocaleDateString("en-BW"),
+    ])
+    const csv = [header, ...data]
+      .map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(","))
+      .join("\r\n")
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }))
+    const link = document.createElement("a")
+    link.href = url
+    link.download = "application-statuses.csv"
+    link.click()
+    URL.revokeObjectURL(url)
+  }
 
   const pageCount = Math.max(1, Math.ceil(rows.length / pageSize))
   const currentPage = Math.min(page, pageCount)
@@ -44,7 +84,32 @@ export function CustomerApplicationTable({ title, applications }: { title: strin
   return (
     <section className="min-w-0 rounded-lg border bg-white p-5 shadow-sm">
       <h2 className="text-xl font-bold">{title}</h2>
-      <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-[1fr_11rem_12rem_12rem_10rem]">
+      {dashboardMode && (
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <label className="flex min-h-11 flex-1 items-center gap-2 rounded-md border bg-white px-3 py-2">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <input
+              className="w-full bg-transparent text-sm outline-none"
+              placeholder="Search applications"
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value)
+                setPage(1)
+              }}
+            />
+          </label>
+          <button
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border bg-white px-4 py-2 text-sm font-semibold text-primary hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={rows.length === 0}
+            onClick={exportApplications}
+            type="button"
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
+          </button>
+        </div>
+      )}
+      {!dashboardMode && <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-[1fr_11rem_12rem_10rem]">
         <label className="flex items-center gap-2 rounded-md border bg-white px-3 py-2">
           <Search className="h-4 w-4 text-muted-foreground" />
           <input className="w-full bg-transparent text-sm outline-none" placeholder="Search applications" value={query} onChange={(event) => { setQuery(event.target.value); setPage(1) }} />
@@ -62,28 +127,21 @@ export function CustomerApplicationTable({ title, applications }: { title: strin
           <option value="rejected">Rejected</option>
           <option value="fulfilled">Fulfilled</option>
         </select>
-        <select className="rounded-md border bg-white px-3 py-2 text-sm font-medium" value={sortBy} onChange={(event) => { setSortBy(event.target.value); setPage(1) }}>
-          <option value="newest">Newest first</option>
-          <option value="oldest">Oldest first</option>
-          <option value="service">Service A-Z</option>
-          <option value="status">Status A-Z</option>
-          <option value="deduction">Highest deduction</option>
-        </select>
         <select className="rounded-md border bg-white px-3 py-2 text-sm font-medium" value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); setPage(1) }}>
           <option value={10}>10 per page</option>
           <option value={25}>25 per page</option>
           <option value={50}>50 per page</option>
         </select>
-      </div>
+      </div>}
 
       <div className="mt-4 max-w-full overflow-x-auto rounded-lg border">
         <table className="w-full min-w-[900px] text-left text-sm">
           <thead className="bg-muted text-muted-foreground">
             <tr>
-              <th className="px-4 py-3">Service</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Monthly deduction</th>
-              <th className="px-4 py-3">Submitted</th>
+              <SortableHeader label="Service" column="service" activeColumn={sortColumn} direction={sortDirection} onSort={changeSort} />
+              <SortableHeader label="Status" column="status" activeColumn={sortColumn} direction={sortDirection} onSort={changeSort} />
+              <SortableHeader label="Monthly deduction" column="deduction" activeColumn={sortColumn} direction={sortDirection} onSort={changeSort} />
+              <SortableHeader label="Submitted" column="submitted" activeColumn={sortColumn} direction={sortDirection} onSort={changeSort} />
               <th className="px-4 py-3">Pulse</th>
               <th className="px-4 py-3">Action</th>
             </tr>
@@ -123,8 +181,39 @@ export function CustomerApplicationTable({ title, applications }: { title: strin
   )
 }
 
+function SortableHeader({
+  label,
+  column,
+  activeColumn,
+  direction,
+  onSort,
+}: {
+  label: string
+  column: SortColumn
+  activeColumn: SortColumn
+  direction: "asc" | "desc"
+  onSort: (column: SortColumn) => void
+}) {
+  const active = activeColumn === column
+  const Icon = active ? direction === "asc" ? ArrowUp : ArrowDown : ArrowUpDown
+
+  return (
+    <th className="px-2 py-1" aria-sort={active ? direction === "asc" ? "ascending" : "descending" : "none"}>
+      <button
+        className="flex min-h-10 w-full items-center gap-2 rounded-md px-2 text-left text-sm font-bold hover:bg-white/60 focus-visible:ring-2 focus-visible:ring-primary"
+        onClick={() => onSort(column)}
+        type="button"
+      >
+        <span>{label}</span>
+        <Icon className={`h-3.5 w-3.5 ${active ? "text-primary" : "text-muted-foreground/70"}`} aria-hidden="true" />
+      </button>
+    </th>
+  )
+}
+
 export function CustomerApplicationDetailsModal({ application, onClose }: { application: MemberApplication; onClose: () => void }) {
   const details = Object.entries(application.details ?? {}).filter(([key, value]) => !key.startsWith("__") && value !== null && value !== "")
+  const attachments = application.attachments ?? []
 
   return (
     <Dialog.Root open onOpenChange={(open) => { if (!open) onClose() }}>
@@ -171,6 +260,53 @@ export function CustomerApplicationDetailsModal({ application, onClose }: { appl
                 ))}
               </dl>
             ) : <p className="p-5 text-sm text-muted-foreground">No additional application details were submitted.</p>}
+          </section>
+
+          <section className="overflow-hidden rounded-xl border bg-white shadow-sm">
+            <div className="flex items-center justify-between gap-3 border-b bg-muted/40 px-5 py-4">
+              <div className="flex items-center gap-2">
+                <Paperclip className="h-5 w-5 text-primary" />
+                <h4 className="font-bold">Submitted attachments</h4>
+              </div>
+              <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">{attachments.length}</span>
+            </div>
+            {attachments.length > 0 ? (
+              <div className="divide-y">
+                {attachments.map((document) => {
+                  const documentId = encodeURIComponent(document.id)
+                  return (
+                    <article key={document.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="font-semibold">{document.document_type}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Uploaded {new Date(document.created_at).toLocaleDateString("en-BW")} | {document.verified_at ? "Verified by CSR" : "Awaiting CSR verification"}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 flex-wrap gap-2">
+                        <a
+                          className="inline-flex min-h-11 items-center gap-2 rounded-md border bg-white px-3 py-2 text-sm font-semibold text-primary hover:bg-muted"
+                          href={`/api/member/documents/file?documentId=${documentId}`}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          <Eye className="h-4 w-4" />
+                          View
+                        </a>
+                        <a
+                          className="inline-flex min-h-11 items-center gap-2 rounded-md border bg-white px-3 py-2 text-sm font-semibold hover:bg-muted"
+                          href={`/api/member/documents/file?documentId=${documentId}&download=1`}
+                        >
+                          <Download className="h-4 w-4" />
+                          Download
+                        </a>
+                      </div>
+                    </article>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="p-5 text-sm text-muted-foreground">No documents are linked to this application.</p>
+            )}
           </section>
         </div>
 

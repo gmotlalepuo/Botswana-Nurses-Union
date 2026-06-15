@@ -414,14 +414,7 @@ begin
       updated_at = now()
   where member.status = 'active'
     and member.created_at < current_month
-    and exists (
-      select 1
-      from public.service_applications application
-      where application.member_id = member.id
-        and application.status in ('approved', 'fulfilled')
-        and coalesce(application.monthly_deduction, 0) > 0
-        and coalesce(application.decided_at, application.updated_at, application.created_at) < current_month
-    )
+    and coalesce(member.monthly_salary, 0) > 0
     and not exists (
       select 1
       from public.payment_transactions payment

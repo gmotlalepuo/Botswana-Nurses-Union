@@ -14,12 +14,13 @@ import { CustomerApplicationTable } from "@/components/customer-application-tabl
 import { InteractiveTable } from "@/components/interactive-table"
 import { MemberDashboardCharts } from "@/components/member-dashboard-charts"
 import { MemberPortalShell } from "@/components/member-portal-shell"
-import { formatCurrency, getMemberPortalData } from "@/lib/member-data"
+import { formatCurrency, getMemberPortalData, isMemberProfileComplete } from "@/lib/member-data"
 import { requireMemberPage } from "@/lib/member-auth"
 
 export default async function MemberPortalPage() {
   const user = await requireMemberPage()
   const data = await getMemberPortalData(user.id)
+  const profileComplete = isMemberProfileComplete(data.profile)
   const deductionTotal = data.monthlyLines.reduce((sum, line) => sum + line.amount, 0)
   const deductionChart = data.monthlyLines.map((line) => ({
     name: line.label,
@@ -29,13 +30,17 @@ export default async function MemberPortalPage() {
   const paymentChart = sumByStatus(data.payments.map((payment) => ({ status: payment.status, amount: Number(payment.amount ?? 0) })))
 
   return (
-    <MemberPortalShell profile={data.profile}>
+    <MemberPortalShell profile={data.profile} profileComplete={profileComplete} showProfileGate>
       <div className="space-y-5">
         <section className="rounded-xl border bg-gradient-to-br from-white to-primary/5 p-5 shadow-sm">
           <div>
             <p className="text-sm font-bold uppercase tracking-wide text-primary">Member services</p>
             <h1 className="mt-1 text-2xl font-bold tracking-normal">Start a new application</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Choose the service you need and complete its application form.</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {data.profile?.status === "active"
+                ? "Choose the service you need and complete its application form."
+                : "Pay your 5% membership fee to activate your account and unlock new applications."}
+            </p>
           </div>
           <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <ApplicationCard
@@ -43,24 +48,28 @@ export default async function MemberPortalPage() {
               href="/portal/funeral-insurance"
               icon={HeartHandshake}
               title="Funeral Insurance"
+              locked={data.profile?.status !== "active"}
             />
             <ApplicationCard
               description="Request legal support through the BONU member service."
               href="/portal/legal-aid"
               icon={Gavel}
               title="Legal Aid"
+              locked={data.profile?.status !== "active"}
             />
             <ApplicationCard
               description="Submit an external loan assistance application."
               href="/portal/external-loans"
               icon={BriefcaseBusiness}
               title="External Loans"
+              locked={data.profile?.status !== "active"}
             />
             <ApplicationCard
               description="Apply for short-term member micro-lending support."
               href="/portal/micro-lending"
               icon={FileText}
               title="Micro-Lending"
+              locked={data.profile?.status !== "active"}
             />
           </div>
         </section>
@@ -97,7 +106,7 @@ export default async function MemberPortalPage() {
                 status: line.status,
                 amount: formatCurrency(line.amount),
               }))}
-              emptyMessage="No active monthly deductions yet. Approved billable services will appear here after CSR configures them."
+              emptyMessage="Complete your profile to calculate the 5% membership fee. Approved service deductions will appear here later."
               exportFileName="bonu-monthly-deductions.csv"
             />
           </div>
@@ -108,7 +117,7 @@ export default async function MemberPortalPage() {
         </section>
 
         <section className="grid gap-5 2xl:grid-cols-2">
-          <CustomerApplicationTable title="Application statuses" applications={data.applications} />
+          <CustomerApplicationTable title="Application statuses" applications={data.applications} dashboardMode />
 
           <article className="min-w-0 rounded-lg border bg-white p-5 shadow-sm">
             <h2 className="text-xl font-bold">Payment history</h2>
@@ -143,12 +152,27 @@ function ApplicationCard({
   href,
   icon: Icon,
   title,
+  locked = false,
 }: {
   description: string
   href: string
   icon: typeof LayoutDashboard
   title: string
+  locked?: boolean
 }) {
+  if (locked) {
+    return (
+      <div className="flex min-h-44 cursor-not-allowed flex-col rounded-lg border bg-muted/40 p-4 opacity-70">
+        <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+          <Icon className="h-5 w-5" />
+        </div>
+        <h2 className="mt-4 text-lg font-bold">{title}</h2>
+        <p className="mt-1 flex-1 text-sm leading-6 text-muted-foreground">{description}</p>
+        <span className="mt-3 text-sm font-bold text-muted-foreground">Locked until membership is active</span>
+      </div>
+    )
+  }
+
   return (
     <Link
       href={href}

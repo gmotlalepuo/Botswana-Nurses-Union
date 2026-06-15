@@ -22,6 +22,7 @@ yarn-error.log*
 pnpm-debug.log*
 debug.log
 .codex-dev.log
+/tmp/
 
 # Vercel
 .vercel

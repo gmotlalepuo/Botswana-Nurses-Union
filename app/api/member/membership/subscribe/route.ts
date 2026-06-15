@@ -3,8 +3,9 @@ import { requireMemberRequest } from "@/lib/member-auth"
 import {
   completeMonthlyPayment,
   findMonthlyPayment,
-  getApprovedMonthlyCharges,
+  getMembershipMonthlyCharge,
   getMemberPaymentTargetMonth,
+  hasApprovedMembershipOnboarding,
 } from "@/lib/membership-payments"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { stripe } from "@/lib/stripe"
@@ -25,15 +26,22 @@ export async function POST(request: Request) {
       return NextResponse.redirect(new URL("/portal/profile?error=profile-required", request.url), 303)
     }
 
+    if (!["active", "suspended"].includes(member.status)) {
+      const onboardingApproved = await hasApprovedMembershipOnboarding(admin, member.id)
+      if (!onboardingApproved) {
+        return NextResponse.redirect(new URL("/portal/membership?error=membership-onboarding-approval-required", request.url), 303)
+      }
+    }
+
     const paymentMonth = await getMemberPaymentTargetMonth(admin, member)
     const existingPayment = await findMonthlyPayment(admin, member.id, paymentMonth)
     if (existingPayment?.status === "paid") {
       return NextResponse.redirect(new URL("/portal/membership?error=membership-month-paid", request.url), 303)
     }
 
-    const charges = await getApprovedMonthlyCharges(admin, member.id)
+    const charges = await getMembershipMonthlyCharge(admin, member.id)
     if (charges.breakdown.length === 0 || charges.total <= 0) {
-      return NextResponse.redirect(new URL("/portal/membership?error=subscription-approval-required", request.url), 303)
+      return NextResponse.redirect(new URL("/portal/profile?error=membership-salary-required", request.url), 303)
     }
 
     if (!process.env.STRIPE_SECRET_KEY) {
@@ -60,7 +68,7 @@ export async function POST(request: Request) {
 
     const pendingPayload = {
       member_id: member.id,
-      description: `Combined monthly membership payment for ${paymentMonth.slice(0, 7)}`,
+      description: `BONU membership fee for ${paymentMonth.slice(0, 7)}`,
       amount: charges.total,
       expected_amount: charges.total,
       currency: "BWP",
@@ -106,8 +114,8 @@ export async function POST(request: Request) {
             currency: "bwp",
             unit_amount: Math.round(charges.total * 100),
             product_data: {
-              name: `BONU monthly membership payment - ${paymentMonth.slice(0, 7)}`,
-              description: charges.breakdown.map((line) => `${friendlyService(line.service)}: P ${line.amount.toFixed(2)}`).join(", "),
+              name: `BONU membership fee - ${paymentMonth.slice(0, 7)}`,
+              description: `5% of monthly salary: P ${charges.salary.toFixed(2)}`,
             },
           },
         },
@@ -138,8 +146,4 @@ function isMissingMembershipLedger(error: unknown) {
     record.code === "42P01" ||
     String(record.message ?? "").includes("payment_kind") ||
     String(record.message ?? "").includes("payment_import_batches")
-}
-
-function friendlyService(value: string) {
-  return value.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())
 }

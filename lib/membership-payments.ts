@@ -1,22 +1,12 @@
 import { createAdminClient } from "@/lib/supabase/admin"
 
-export const BILLABLE_SERVICE_TYPES = [
-  "funeral_insurance",
-  "legal_aid",
-  "loan_assistance",
-  "micro_loan",
-  "merchandise",
-  "electronic_contract",
-  "bundle",
-]
-
-export const APPROVED_SERVICE_STATUSES = ["approved", "fulfilled"]
-
 export type MonthlyPaymentBreakdown = {
   applicationId: string
   service: string
   amount: number
 }
+
+export const MEMBERSHIP_SALARY_RATE = 0.05
 
 export function paymentMonthStart(value = new Date()) {
   const formatter = new Intl.DateTimeFormat("en-CA", {
@@ -42,30 +32,42 @@ export function normalizePaymentMonth(value: string) {
   return `${match[1]}-${String(month).padStart(2, "0")}-01`
 }
 
-export async function getApprovedMonthlyCharges(
+export async function getMembershipMonthlyCharge(
+  admin: ReturnType<typeof createAdminClient>,
+  memberId: string,
+) {
+  const { data: member, error } = await admin
+    .from("members")
+    .select("monthly_salary")
+    .eq("id", memberId)
+    .maybeSingle()
+
+  if (error) throw error
+
+  const salary = Number(member?.monthly_salary ?? 0)
+  const total = salary > 0 ? Math.round(salary * MEMBERSHIP_SALARY_RATE * 100) / 100 : 0
+  const breakdown: MonthlyPaymentBreakdown[] = total > 0
+    ? [{ applicationId: "membership", service: "membership_fee", amount: total }]
+    : []
+
+  return { salary, rate: MEMBERSHIP_SALARY_RATE, total, breakdown }
+}
+
+export async function hasApprovedMembershipOnboarding(
   admin: ReturnType<typeof createAdminClient>,
   memberId: string,
 ) {
   const { data, error } = await admin
     .from("service_applications")
-    .select("id, application_type, monthly_deduction")
+    .select("id")
     .eq("member_id", memberId)
-    .in("application_type", BILLABLE_SERVICE_TYPES)
-    .in("status", APPROVED_SERVICE_STATUSES)
-    .gt("monthly_deduction", 0)
+    .eq("application_type", "membership")
+    .in("status", ["approved", "fulfilled"])
+    .limit(1)
+    .maybeSingle()
 
   if (error) throw error
-
-  const breakdown: MonthlyPaymentBreakdown[] = (data ?? []).map((application) => ({
-    applicationId: application.id,
-    service: application.application_type,
-    amount: Number(application.monthly_deduction ?? 0),
-  }))
-
-  return {
-    breakdown,
-    total: breakdown.reduce((sum, line) => sum + line.amount, 0),
-  }
+  return Boolean(data)
 }
 
 export async function findMonthlyPayment(
@@ -131,6 +133,20 @@ export async function completeMonthlyPayment({
   importBatchId?: string | null
   metadata?: Record<string, unknown>
 }) {
+  const { data: member, error: memberError } = await admin
+    .from("members")
+    .select("status")
+    .eq("id", memberId)
+    .maybeSingle()
+  if (memberError) throw memberError
+
+  if (!["active", "suspended"].includes(member?.status ?? "")) {
+    const onboardingApproved = await hasApprovedMembershipOnboarding(admin, memberId)
+    if (!onboardingApproved) {
+      throw new Error("membership-onboarding-approval-required")
+    }
+  }
+
   const existing = await findMonthlyPayment(admin, memberId, paymentMonth)
 
   if (existing?.status === "paid") {
@@ -139,7 +155,7 @@ export async function completeMonthlyPayment({
 
   const payload = {
     member_id: memberId,
-    description: `Combined monthly membership payment for ${paymentMonth.slice(0, 7)}`,
+    description: `BONU membership fee for ${paymentMonth.slice(0, 7)}`,
     amount,
     expected_amount: expectedAmount,
     currency: "BWP",
@@ -172,8 +188,8 @@ export async function completeMonthlyPayment({
   await admin.from("members").update({ status: "active", updated_at: new Date().toISOString() }).eq("id", memberId)
   await admin.from("notifications").insert({
     member_id: memberId,
-    title: "Monthly membership payment received",
-    message: `Combined membership payment of P ${amount.toFixed(2)} for ${paymentMonth.slice(0, 7)} was received.`,
+    title: "Membership fee received",
+    message: `Your BONU membership fee of P ${amount.toFixed(2)} for ${paymentMonth.slice(0, 7)} was received. Your membership is active.`,
     channel: "in_app",
   })
 
@@ -197,7 +213,7 @@ export async function completeStripeMonthlyPayment(
     return { status: "invalid" as const }
   }
 
-  const charges = await getApprovedMonthlyCharges(admin, memberId)
+  const charges = await getMembershipMonthlyCharge(admin, memberId)
   const amount = Number(session.amount_total ?? 0) / 100
   const paymentIntentId = typeof session.payment_intent === "string"
     ? session.payment_intent

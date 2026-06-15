@@ -2,14 +2,15 @@ import { MemberPortalShell } from "@/components/member-portal-shell"
 import { InteractiveTable } from "@/components/interactive-table"
 import { CustomerApplicationTable } from "@/components/customer-application-table"
 import { getMemberPortalData, formatCurrency } from "@/lib/member-data"
-import { requireMemberPage } from "@/lib/member-auth"
-import { previousPaymentMonth, paymentMonthStart } from "@/lib/membership-payments"
+import { requireCompleteMemberPage } from "@/lib/member-auth"
+import { MEMBERSHIP_SALARY_RATE, previousPaymentMonth, paymentMonthStart } from "@/lib/membership-payments"
+import { MembershipDocumentFlow } from "@/components/membership-document-flow"
 
 const billableServiceTypes = new Set(["funeral_insurance", "legal_aid", "loan_assistance", "micro_loan", "merchandise", "electronic_contract", "bundle"])
 const approvedStatuses = new Set(["approved", "fulfilled"])
 
 export default async function MembershipPage() {
-  const user = await requireMemberPage()
+  const { user } = await requireCompleteMemberPage()
   const data = await getMemberPortalData(user.id)
   const approvedBillableApplications = data.applications.filter(
     (application) =>
@@ -17,8 +18,13 @@ export default async function MembershipPage() {
       approvedStatuses.has(application.status) &&
       Number(application.monthly_deduction ?? 0) > 0,
   )
+  const membershipApplications = data.applications.filter((application) => application.application_type === "membership")
+  const hasApprovedMembershipOnboarding = membershipApplications.some((application) =>
+    ["approved", "fulfilled"].includes(application.status),
+  )
   const approvedMonthlyTotal = approvedBillableApplications.reduce((sum, application) => sum + Number(application.monthly_deduction ?? 0), 0)
-  const hasApprovedBillableServices = approvedBillableApplications.length > 0
+  const monthlySalary = Number(data.profile?.monthly_salary ?? 0)
+  const membershipFee = Math.round(monthlySalary * MEMBERSHIP_SALARY_RATE * 100) / 100
   const currentPaymentMonth = paymentMonthStart()
   const previousMonth = previousPaymentMonth()
   const currentMonthPaid = data.payments.some(
@@ -46,13 +52,17 @@ export default async function MembershipPage() {
   )
   const isMembershipActive = data.profile?.status === "active"
   const isSuspended = data.profile?.status === "suspended"
+  const requiresOnboardingApproval = !isMembershipActive && !isSuspended
+  const canPayMembership = membershipFee > 0 && (!requiresOnboardingApproval || hasApprovedMembershipOnboarding)
   const membershipStatus = isMembershipActive
     ? "Active"
     : isSuspended
       ? "Suspended"
-      : hasApprovedBillableServices
+      : hasApprovedMembershipOnboarding
         ? "Ready to activate"
-        : "Pending activation"
+        : membershipApplications.length > 0
+          ? "Onboarding under review"
+          : "Onboarding required"
   const actionLabel = isSuspended ? "Reactivate and pay" : data.profile?.status === "active" ? "Pay this month" : "Activate membership"
 
   return (
@@ -61,12 +71,13 @@ export default async function MembershipPage() {
         <section className="rounded-lg border bg-white p-5 shadow-sm">
           <h1 className="text-3xl font-bold tracking-normal">Membership</h1>
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-            Manage your BONU membership subscription and review the monthly services currently attached to your account.
+            Pay your BONU membership fee and review the monthly services attached to your account.
           </p>
           <div className="mt-5 grid gap-4 md:grid-cols-4">
             <Info label="Membership status" value={membershipStatus} />
-            <Info label="Approved monthly deductibles" value={formatCurrency(approvedMonthlyTotal)} />
-            <Info label="Approved billable services" value={String(approvedBillableApplications.length)} />
+            <Info label="Monthly salary" value={formatCurrency(monthlySalary)} />
+            <Info label="Membership rate" value="5%" />
+            <Info label="Monthly membership fee" value={formatCurrency(membershipFee)} />
             <Info label="Outstanding balance" value={formatCurrency(data.outstandingBalance)} />
           </div>
           <form action="/api/member/membership/subscribe" method="post" className="mt-5 rounded-lg border bg-muted/50 p-4">
@@ -74,28 +85,34 @@ export default async function MembershipPage() {
               <div>
                 <h2 className="font-bold">{isMembershipActive ? "Membership is active" : membershipStatus}</h2>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Activation is available only after CSR approves at least one billable service with a monthly deduction.
+                  Your membership fee is calculated as 5% of the monthly salary saved in your profile. CSR must approve your membership onboarding forms before payment can activate your account.
                 </p>
-                <p className="mt-3 text-sm font-semibold">Amount to be billed monthly: {formatCurrency(approvedMonthlyTotal)}</p>
-                {!hasApprovedBillableServices ? (
-                  <p className="mt-2 text-sm text-amber-700">Apply for Funeral Insurance, Legal Aid, External Loans, Micro-Lending, Shop, Electronic Contracts, or Bundles and wait for CSR approval.</p>
+                <p className="mt-3 text-sm font-semibold">Membership fee due: {formatCurrency(membershipFee)}</p>
+                {requiresOnboardingApproval && !hasApprovedMembershipOnboarding ? (
+                  <p className="mt-2 text-sm font-medium text-amber-700">
+                    Submit the membership onboarding form below and wait for CSR approval. The activation payment button will unlock after approval.
+                  </p>
                 ) : currentMonthPayment ? (
                   <p className="mt-2 text-sm font-medium text-emerald-700">
                     Payment for {paymentTargetMonth.slice(0, 7)} has been processed via {currentMonthPayment.payment_source === "csr_import" ? "CSR bulk payment" : "Stripe"}.
                   </p>
                 ) : (
                   <p className="mt-2 text-sm font-medium text-emerald-700">
-                    CSR approval is complete. You can now make the combined payment for {paymentTargetMonth.slice(0, 7)}.
+                    Pay the membership fee for {paymentTargetMonth.slice(0, 7)} to {isMembershipActive ? "keep your membership current" : "activate your membership"}.
                   </p>
                 )}
               </div>
               {!currentMonthPayment ? (
                 <button
                   className="rounded-md bg-primary px-4 py-3 font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:bg-muted-foreground/40"
-                  disabled={!hasApprovedBillableServices}
+                  disabled={!canPayMembership}
                   type="submit"
                 >
-                  {hasApprovedBillableServices ? actionLabel : "Pending activation"}
+                  {canPayMembership
+                    ? `${actionLabel} - ${formatCurrency(membershipFee)}`
+                    : membershipFee <= 0
+                      ? "Salary required"
+                      : "Awaiting CSR approval"}
                 </button>
               ) : (
                 <span className="rounded-md bg-emerald-100 px-4 py-3 text-center font-semibold text-emerald-800">Paid for this month</span>
@@ -103,14 +120,20 @@ export default async function MembershipPage() {
             </div>
           </form>
         </section>
-        <CustomerApplicationTable title="Approved billed services" applications={approvedBillableApplications} />
+        <MembershipDocumentFlow membershipApplications={membershipApplications} />
+        {membershipApplications.length > 0 && (
+          <CustomerApplicationTable title="Membership form submissions" applications={membershipApplications} />
+        )}
+        {approvedBillableApplications.length > 0 && (
+          <CustomerApplicationTable title={`Approved billed services (${formatCurrency(approvedMonthlyTotal)} monthly)`} applications={approvedBillableApplications} />
+        )}
         <section className="rounded-lg border bg-white p-5 shadow-sm">
           <h2 className="text-xl font-bold">Subscription payment history</h2>
           <div className="mt-4">
             <InteractiveTable
               columns={[
                 { key: "description", label: "Description" },
-                { key: "services", label: "Services covered" },
+                { key: "services", label: "Payment breakdown" },
                 { key: "amount", label: "Amount" },
                 { key: "status", label: "Status", filterable: true },
                 { key: "source", label: "Source", filterable: true },

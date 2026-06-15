@@ -37,6 +37,7 @@ export type MemberApplication = {
   details: Record<string, unknown>
   submitted_at: string
   case_pulses?: CasePulseItem[]
+  attachments?: MemberDocument[]
 }
 
 export type MemberSubscription = {
@@ -158,10 +159,12 @@ export async function getMemberPortalData(userId: string): Promise<MemberPortalD
   ])
 
   const applicationRows = ((applications.data ?? []) as MemberApplication[])
+  const documentRows = (documents.data ?? []) as MemberDocument[]
+  attachApplicationDocuments(applicationRows, documentRows)
   await attachCasePulses(supabase, applicationRows, userId)
   const subscriptionRows = ((subscriptions.data ?? []) as MemberSubscription[])
   const paymentRows = ((payments.data ?? []) as MemberPayment[])
-  const monthlyLines = buildMonthlyLines(subscriptionRows, applicationRows)
+  const monthlyLines = buildMonthlyLines(profile as MemberProfile, subscriptionRows, applicationRows)
   const outstandingBalance = paymentRows.filter((payment) => payment.status === "pending" || payment.status === "failed").reduce((sum, payment) => sum + Number(payment.amount ?? 0), 0)
 
   return {
@@ -170,11 +173,24 @@ export async function getMemberPortalData(userId: string): Promise<MemberPortalD
     subscriptions: subscriptionRows,
     payments: paymentRows,
     merchandiseOrders: normalizeMerchandiseOrders(merchandiseOrders.data ?? []),
-    documents: (documents.data ?? []) as MemberDocument[],
+    documents: documentRows,
     complaints: (complaints.data ?? []) as MemberComplaint[],
     monthlyLines,
     monthlyTotal: monthlyLines.reduce((sum, line) => sum + line.amount, 0),
     outstandingBalance,
+  }
+}
+
+function attachApplicationDocuments(applications: MemberApplication[], documents: MemberDocument[]) {
+  const documentsById = new Map(documents.map((document) => [document.id, document]))
+
+  for (const application of applications) {
+    const attachmentIds = application.details?.__attachmentDocumentIds
+    application.attachments = Array.isArray(attachmentIds)
+      ? attachmentIds
+          .map((id) => documentsById.get(String(id)))
+          .filter((document): document is MemberDocument => Boolean(document))
+      : []
   }
 }
 
@@ -229,17 +245,32 @@ async function attachPulseLikes(supabase: ReturnType<typeof createAdminClient>, 
   }
 }
 
-function buildMonthlyLines(subscriptions: MemberSubscription[], applications: MemberApplication[]) {
-  const lines: MonthlyDeductionLine[] = subscriptions.map((subscription) => ({
+function buildMonthlyLines(profile: MemberProfile, subscriptions: MemberSubscription[], applications: MemberApplication[]) {
+  const membershipFee = Math.round(Number(profile.monthly_salary ?? 0) * 0.05 * 100) / 100
+  const lines: MonthlyDeductionLine[] = membershipFee > 0
+    ? [{
+        id: "membership-fee",
+        label: "BONU membership fee (5% of salary)",
+        amount: membershipFee,
+        source: "Membership",
+        status: profile.status === "active" ? "active" : "pending activation",
+      }]
+    : []
+
+  lines.push(...subscriptions.map((subscription) => ({
     id: `subscription-${subscription.id}`,
     label: subscription.service_name,
     amount: Number(subscription.monthly_amount ?? 0),
     source: "Subscription",
     status: "active",
-  }))
+  })))
 
   for (const application of applications) {
-    if (!["approved", "fulfilled"].includes(application.status) || !application.monthly_deduction) {
+    if (
+      application.application_type === "membership" ||
+      !["approved", "fulfilled"].includes(application.status) ||
+      !application.monthly_deduction
+    ) {
       continue
     }
 
@@ -326,4 +357,32 @@ export function calculateProfileCompletion(profile: MemberProfile | null, docume
   const totalItems = profileFields.length + requiredDocuments.length
 
   return Math.round(((completedFields + completedDocuments) / totalItems) * 100)
+}
+
+const requiredAccessProfileFields: Array<keyof MemberProfile> = [
+  "full_name",
+  "national_id",
+  "date_of_birth",
+  "gender",
+  "occupation",
+  "employer",
+  "employee_number",
+  "mobile_number",
+  "email",
+  "physical_address",
+  "district",
+  "council",
+  "work_station",
+  "department",
+  "employment_date",
+  "monthly_salary",
+]
+
+export function isMemberProfileComplete(profile: MemberProfile | null) {
+  if (!profile) return false
+  return requiredAccessProfileFields.every((field) => {
+    const value = profile[field]
+    if (field === "monthly_salary") return Number(value ?? 0) > 0
+    return value !== null && value !== undefined && String(value).trim() !== ""
+  })
 }

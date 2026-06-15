@@ -2,10 +2,10 @@ import { ElectronicContractHistory } from "@/components/electronic-contract-hist
 import { ElectronicContractForm } from "@/components/electronic-contract-form"
 import { MemberPortalShell } from "@/components/member-portal-shell"
 import { getMemberPortalData } from "@/lib/member-data"
-import { requireMemberPage } from "@/lib/member-auth"
+import { requireActiveMemberPage } from "@/lib/member-auth"
 
 export default async function ElectronicContractsPage() {
-  const user = await requireMemberPage()
+  const { user } = await requireActiveMemberPage()
   const data = await getMemberPortalData(user.id)
   const applications = data.applications.filter((item) => item.application_type === "electronic_contract")
 
